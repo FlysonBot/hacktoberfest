@@ -17,10 +17,10 @@ config = types.GenerateContentConfig(
         function_calling_config=types.FunctionCallingConfig(mode='ANY')
     ),
     thinking_config=types.ThinkingConfig(thinking_level='high'),  # what eval/eval_plan.py tested
-    http_options=types.HttpOptions(timeout=90_000),  # ms; real calls took 19-56s
+    http_options=types.HttpOptions(timeout=30_000),  # ms; 26b plan calls took 1-3s
 )
 # Demo questions have a cached answer, so give up on a slow call sooner and serve that instead.
-demo_config = config.model_copy(update={'http_options': types.HttpOptions(timeout=30_000)})
+demo_config = config.model_copy(update={'http_options': types.HttpOptions(timeout=15_000)})
 
 
 def normalize(args) -> dict:
@@ -118,6 +118,7 @@ def make_plan(text: str, image_base64: str | None = None) -> dict:
         problems = validate(text, args, has_image=bool(image_base64)) if args is not None else ['no tool call']
         if not problems:
             return normalize(args)
+        print(f'plan rejected: {problems} args={args}')
         note = retry_note(problems if args is not None else [])
     if cached:
         print('Gemma output invalid twice; serving cached demo plan')

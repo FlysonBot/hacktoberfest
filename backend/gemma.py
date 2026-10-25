@@ -10,9 +10,8 @@ from google.genai import errors, types  # noqa: E402
 
 client = genai.Client()  # reads GEMINI_API_KEY
 
-# Tries per model. 31b fails ~80% with 503 right now, so it gets one shot before the 26b fallback.
-MODELS = {'gemma-4-31b-it': 1, 'gemma-4-26b-a4b-it': 2}  # strongest first, fast fallback
-FAST_FIRST = {'gemma-4-26b-a4b-it': 2, 'gemma-4-31b-it': 1}  # captions/explain: speed over strength
+# Tries per model. 26b only: on 2026-10-25, 31b failed 9 of 9 calls (some hung 30-51s first); 26b answered in 1-3s.
+MODELS = {'gemma-4-26b-a4b-it': 2}
 
 
 class GemmaUnavailable(Exception):
@@ -38,7 +37,7 @@ def _call(contents, config, models: dict[str, int]):
     raise GemmaUnavailable
 
 
-def generate(contents: str, config, models: dict[str, int] = FAST_FIRST) -> str | None:
+def generate(contents: str, config, models: dict[str, int] = MODELS) -> str | None:
     """Plain-text Gemma call (captions/explain). Returns the reply text, or None if every model failed."""
     try:
         return _call(contents, config, models).text

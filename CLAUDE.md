@@ -200,8 +200,8 @@ Backend rules:
 - **Faithfulness check** for `source: "user_question"` (skipped, with the ops order check, when a screenshot is attached: the numbers are in the image, not the text): count occurrences, not just presence — each number's count across `initial` + ops `args` must be <= its count in the user's question text (compare `collections.Counter`s); otherwise retry. (Eval: the 26b fallback turned "50, 30, 70, 20, 40" into "50, 30, 40, 20, 40"; 40 appears once in the question but twice in the output.)
 - **Arg count** per op must match the ops table: `pop`, `peek`, `dequeue`, `remove_max`, `sort` = 0 args; `push`, `enqueue`, `append`, `prepend`, `insert`, `search`, `remove` = 1; `insert_after` = 2. Wrong count = invalid, retry. (Eval: 26b returned `peek` with args `["peek"]` and `dequeue` with `["[],"]`.)
 - **Ops order check** for `source: "user_question"`: use only each op's **last** arg (the value pushed / inserted / searched); those numbers, in op order, must appear in the same order in the question text (subsequence). Last arg only, because students write "insert 8 after 30" (text order 8, 30) while the args are `["30", "8"]`; checking every arg rejected that correct plan. Ops only, not `initial`, since `initial` can legitimately be reordered (BST level order). (Eval: 26b turned "Insert 50, 30, 70, 20, 40" into 50, 30, 40, 20, 70, a different BST, and the Counter check passed it.)
-- Model order: `gemma-4-31b-it` gets **one** try (it fails ~80% with 503), then `gemma-4-26b-a4b-it` gets two. A 4xx, timeout, or network error moves straight to the next model. Always run the faithfulness check on 26b output.
-- Timeouts: 90s per plan call (30s for cached demo questions), 20s for captions/explain.
+- Model: **`gemma-4-26b-a4b-it` only**, two tries on 5xx. `gemma-4-31b-it` was removed: on 2026-10-25 it failed 9 of 9 real calls, 3 of them after hanging 30–51s, while 26b answered every call in 1–3s. A 4xx, timeout, or network error gives up right away. Always run the faithfulness check on 26b output.
+- Timeouts: 30s per plan call (15s for cached demo questions), 20s for captions/explain.
 - **Demo cache (backend):** `backend/demo_cache.py` maps the `docs/DEMO.md` question texts to `samples/plan_*.json`, served when Gemma is down or invalid twice. Keep it in sync with the demo script.
 - 503 "high demand" on 31b happened on about half the calls during the hackathon, so the cached demo responses (Demo safety) are **required, not optional**. In the latest eval run 31b failed 5 of 6 calls, so 26b is effectively the main path: **all validation above must run on 26b output**.
 - Wrap all JSON parsing in try/except. Models sometimes add text around the JSON.
@@ -217,7 +217,7 @@ Backend rules:
 ## Gemma / API setup
 
 - SDK: `google-genai` (Python). Key comes from env var **`GEMINI_API_KEY`**. Never hardcode it or commit `.env`.
-- Models on the Gemini API: `gemma-4-31b-it` (stronger: use for `/api/plan`, especially screenshots) and `gemma-4-26b-a4b-it` (faster: captions/explain, and fallback for `/api/plan` on 503/500).
+- Models on the Gemini API: `gemma-4-26b-a4b-it` for everything (`gemma-4-31b-it` removed, see Backend rules). Originally: `gemma-4-31b-it` (stronger: use for `/api/plan`, especially screenshots) and `gemma-4-26b-a4b-it` (faster: captions/explain, and fallback for `/api/plan` on 503/500).
 - **No audio**: E2B/E4B are not on the Gemini API. Image input works.
 - Thinking: `thinking_level="minimal"` for captions/explain; `"high"` only for `/api/plan` if latency allows.
 - Free tier is about 15 requests/min per key. **Everyone uses their own key** while testing.

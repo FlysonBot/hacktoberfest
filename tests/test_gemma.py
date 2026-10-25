@@ -34,22 +34,28 @@ class Reply:
     text = 'ok'
 
 
-def test_429_on_31b_falls_back_to_26b(monkeypatch):  # used to give up without trying 26b
-    models = fake_client(monkeypatch, api_error(errors.ClientError, 429), Reply())
-    assert gemma.generate('hi', None, gemma.MODELS) == 'ok'
-    assert models == ['gemma-4-31b-it', 'gemma-4-26b-a4b-it']
+def test_429_gives_up_without_retry(monkeypatch):  # retrying a rate limit right away won't help
+    models = fake_client(monkeypatch, api_error(errors.ClientError, 429))
+    assert gemma.generate('hi', None) is None
+    assert models == ['gemma-4-26b-a4b-it']
+
+
+def test_503_retried_once(monkeypatch):
+    models = fake_client(monkeypatch, api_error(errors.ServerError, 503), Reply())
+    assert gemma.generate('hi', None) == 'ok'
+    assert models == ['gemma-4-26b-a4b-it'] * 2
 
 
 def test_network_error_falls_back(monkeypatch):  # used to escape as a plain-text 500
     fake_client(monkeypatch, httpx.ConnectError('ssl'), Reply())
-    assert gemma.generate('hi', None, gemma.MODELS) == 'ok'
+    assert gemma.generate('hi', None, {'a': 1, 'b': 1}) == 'ok'
 
 
-def test_31b_gets_one_try_26b_two(monkeypatch):
-    models = fake_client(monkeypatch, *[api_error(errors.ServerError, 503)] * 3)
+def test_only_26b_used(monkeypatch):  # 31b failed 9 of 9 real calls on 2026-10-25
+    models = fake_client(monkeypatch, *[api_error(errors.ServerError, 503)] * 2)
     with pytest.raises(gemma.GemmaUnavailable):
         gemma.call_tool('hi', None)
-    assert models == ['gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemma-4-26b-a4b-it']
+    assert models == ['gemma-4-26b-a4b-it'] * 2
 
 
 def test_image_mime():
