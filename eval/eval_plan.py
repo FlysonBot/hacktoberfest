@@ -101,7 +101,9 @@ Rules:
   Example: "Insert 50, 30, 70" -> insert ["50"], insert ["30"], insert ["70"].
 - pop, peek, dequeue, remove_max, and sort take args: []. Never put words or brackets in args.
   Example: "Pop(numStack)" -> {"op": "pop", "args": []}.
-- Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"])."""
+- Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"]).
+- Students write informally, with typos, missing punctuation, or partial info. Interpret generously; if values
+  are missing, invent a small example instead of refusing. If the structure starts empty, initial must be []."""
 
 
 def ops(*pairs):
@@ -130,6 +132,18 @@ CASES = [
      ops(("insert", "50"), ("insert", "30"), ("insert", "70"), ("insert", "20"), ("insert", "40"))),
     ("How does a queue work?", "queue", "generated_example", None, None),
     ("Explain separate chaining.", "hash_chaining", "generated_example", None, None),
+    # Messy input: how students actually type.
+    ("push 45 56 11 then pop, what's left",
+     "stack", "user_question", [],
+     ops(("push", "45"), ("push", "56"), ("push", "11"), ("pop",))),
+    ("what does pop do", "stack", "generated_example", None, None),
+    ("my hw: list is 12 30, insert 8 after 30, 45 after 12",
+     ("doubly_linked_list", "singly_linked_list"), "user_question", ["12", "30"],
+     ops(("insert_after", "30", "8"), ("insert_after", "12", "45"))),
+    ("stack starts empty. push 3, push 7. pop.",
+     "stack", "user_question", [],
+     ops(("push", "3"), ("push", "7"), ("pop",))),
+    ("explain bst search pls", "bst", "generated_example", None, None),
 ]
 
 client = genai.Client()
@@ -210,9 +224,10 @@ def validate(question, args):
         invented = Counter(n for v in emitted for n in NUMBER.findall(v)) - question_numbers
         if invented:
             problems.append(f"numbers over-used vs question (extra count): {dict(invented)}")
-        # Order: numbers in ops args must appear in the question in the same order.
-        # Ops only; initial may legitimately differ in order (BST level order).
-        op_numbers = [n for _, op_args in got_ops for a in op_args for n in NUMBER.findall(a)]
+        # Order: each op's key number (its LAST arg: the value pushed/inserted/searched) must appear
+        # in the question in the same order as the ops. Last arg only, because "insert 8 after 30"
+        # lists 8 before 30 while args are ["30", "8"]. Ops only; initial may be reordered (BST level order).
+        op_numbers = [n for _, op_args in got_ops if op_args for n in NUMBER.findall(op_args[-1])]
         if not is_subsequence(op_numbers, NUMBER.findall(question)):
             problems.append(f"ops numbers out of order vs question: {op_numbers}")
 
@@ -226,8 +241,10 @@ def validate(question, args):
 def compare(args, want_structure, want_source, want_initial, want_ops):
     """Eval-only checks against the expected answer. Never shown to the model."""
     problems = []
-    if args.get("structure") != want_structure:
-        problems.append(f"structure={args.get('structure')!r}, want {want_structure!r}")
+    # want_structure may be a tuple of acceptable structures.
+    allowed = want_structure if isinstance(want_structure, tuple) else (want_structure,)
+    if args.get("structure") not in allowed:
+        problems.append(f"structure={args.get('structure')!r}, want {' or '.join(map(repr, allowed))}")
     if args.get("source") != want_source:
         problems.append(f"source={args.get('source')!r}, want {want_source!r}")
     got_ops = norm_ops(args.get("ops"))

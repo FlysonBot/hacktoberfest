@@ -88,56 +88,83 @@ export function questions(steps) {
 
 const esc = (v) => String(v).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-const BOX_W = 96, BOX_H = 64, GAP = 72, PAD = 24, NULL_W = 64, FONT = 28;
+// Compact, zyBooks-like sizing (px at 1:1; the SVG only ever shrinks, capped at 420px wide).
+// Nodes are 48px (not 64) so 6 nodes plus arrows still fit near 420px; long values widen their node.
+const BOX_H = 36, MIN_W = 48, GAP = 18, PAD = 6, FONT = 18, SMALL = 10;
+const NULL_ZONE = 34; // stub arrow + "null" at each end
+const TAG_H = 16;
+const TOP = PAD + TAG_H + 6; // y of the node row (room for head/tail tags)
+
+const C = {
+  text: 'var(--text,#1D1D1F)',
+  muted: 'var(--text-3,#6B6965)',
+  box: 'var(--surface,#FFFFFF)',
+  line: 'var(--line-strong,#C9C6BF)',
+  hiFill: 'var(--accent-tint,#F1EBFF)',
+  hiLine: 'var(--accent-strong,#7B5CE6)',
+  tagText: 'var(--accent-text,#5B3CC4)',
+};
+
+const nodeW = (v) => Math.max(MIN_W, String(v).length * 11 + 16);
+const text = (x, y, s, size, color, anchor = 'middle', weight = 400) =>
+  `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-size="${size}" font-weight="${weight}" style="fill:${color}">${s}</text>`;
+const arrow = (x1, y, x2) =>
+  `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke-width="1.25" style="stroke:${C.muted}" marker-end="url(#dll-arrow)"/>`;
 
 export function render(container, step) {
   const { nodes, head, tail } = step.state;
   const hl = new Set(step.highlights);
-  const top = PAD + 44; // room for head/tail labels
-  const width = PAD * 2 + NULL_W * 2 + Math.max(nodes.length, 1) * BOX_W + Math.max(nodes.length - 1, 0) * GAP + 32;
-  const height = top + BOX_H + PAD + 10;
-  const x0 = PAD + NULL_W + 16;
-  const xOf = (i) => x0 + i * (BOX_W + GAP);
-  const midY = top + BOX_H / 2;
+  const widths = nodes.map(nodeW);
+  const xs = [];
+  let x = PAD + NULL_ZONE;
+  for (const w of widths) {
+    xs.push(x);
+    x += w + GAP;
+  }
+  const width = nodes.length ? x - GAP + NULL_ZONE + PAD : 240;
+  const height = TOP + BOX_H + PAD;
+  const midY = TOP + BOX_H / 2;
   const parts = [
-    `<defs><marker id="dll-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">` +
-      `<path d="M0,0 L10,5 L0,10 z" style="fill:var(--text,#1D1D1F)"/></marker></defs>`,
+    `<defs><marker id="dll-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">` +
+      `<path d="M0,0 L10,5 L0,10 z" style="fill:${C.muted}"/></marker></defs>`,
   ];
-  const label = (x, y, text, size, color, anchor = 'middle', weight = 400) =>
-    `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="central" font-size="${size}" font-weight="${weight}" style="fill:${color}">${text}</text>`;
 
   if (!nodes.length) {
-    parts.push(label(width / 2, midY, '(empty list: head = tail = null)', FONT * 0.75, 'var(--text-secondary,#6E6E73)'));
+    parts.push(text(width / 2, midY, 'empty list (head = tail = null)', SMALL + 2, C.muted));
   } else {
-    parts.push(label(PAD + NULL_W / 2, midY, 'null', FONT * 0.65, 'var(--text-secondary,#6E6E73)'));
-    parts.push(label(xOf(nodes.length - 1) + BOX_W + 16 + NULL_W / 2, midY, 'null', FONT * 0.65, 'var(--text-secondary,#6E6E73)'));
-    // prev pointer of head and next pointer of tail point at null.
-    parts.push(`<line x1="${x0}" y1="${midY + 12}" x2="${PAD + NULL_W - 4}" y2="${midY + 12}" stroke-width="2.5" style="stroke:var(--text,#1D1D1F)" marker-end="url(#dll-arrow)"/>`);
-    const xt = xOf(nodes.length - 1) + BOX_W;
-    parts.push(`<line x1="${xt}" y1="${midY - 12}" x2="${xt + 12}" y2="${midY - 12}" stroke-width="2.5" style="stroke:var(--text,#1D1D1F)" marker-end="url(#dll-arrow)"/>`);
+    // head.prev -> null (left) and tail.next -> null (right).
+    const right = xs.at(-1) + widths.at(-1);
+    parts.push(
+      arrow(xs[0], midY + 5, xs[0] - 12),
+      text(xs[0] - 15, midY + 5, 'null', SMALL, C.muted, 'end'),
+      arrow(right, midY - 5, right + 12),
+      text(right + 15, midY - 5, 'null', SMALL, C.muted, 'start')
+    );
   }
 
   nodes.forEach((value, i) => {
-    const x = xOf(i);
     const on = hl.has(i);
     parts.push(
-      `<rect x="${x}" y="${top}" width="${BOX_W}" height="${BOX_H}" rx="8" stroke-width="3" ` +
-        `style="fill:${on ? 'var(--accent,#C4B1FF)' : 'var(--surface,#FFFFFF)'};stroke:${on ? 'var(--accent-strong,#7B5CE6)' : 'var(--line-strong,#C9C6BF)'}"/>`,
-      label(x + BOX_W / 2, midY, esc(value), FONT, 'var(--text,#1D1D1F)', 'middle', 600)
+      `<rect x="${xs[i]}" y="${TOP}" width="${widths[i]}" height="${BOX_H}" rx="6" stroke-width="1.5" style="fill:${on ? C.hiFill : C.box};stroke:${on ? C.hiLine : C.line}"/>`,
+      text(xs[i] + widths[i] / 2, midY, esc(value), FONT, C.text, 'middle', 500)
     );
     if (i < nodes.length - 1) {
-      // next (top, →) and prev (bottom, ←) pointers.
-      const a = x + BOX_W, b = xOf(i + 1);
+      // next (upper, →) and prev (lower, ←) pointers.
+      const a = xs[i] + widths[i], b = xs[i + 1];
+      parts.push(arrow(a + 1, midY - 5, b - 1), arrow(b - 1, midY + 5, a + 1));
+    }
+    const tag = [i === head && 'head', i === tail && 'tail'].filter(Boolean).join(' · ');
+    if (tag) {
+      const tw = tag.length * 6 + 12, tx = xs[i] + widths[i] / 2 - tw / 2;
       parts.push(
-        `<line x1="${a}" y1="${midY - 12}" x2="${b - 2}" y2="${midY - 12}" stroke-width="2.5" style="stroke:var(--text,#1D1D1F)" marker-end="url(#dll-arrow)"/>`,
-        `<line x1="${b}" y1="${midY + 12}" x2="${a + 2}" y2="${midY + 12}" stroke-width="2.5" style="stroke:var(--text,#1D1D1F)" marker-end="url(#dll-arrow)"/>`
+        `<rect x="${tx}" y="${PAD}" width="${tw}" height="${TAG_H}" rx="${TAG_H / 2}" stroke-width="1" style="fill:${C.hiFill};stroke:${C.hiLine}"/>`,
+        text(tx + tw / 2, PAD + TAG_H / 2, tag, SMALL, C.tagText, 'middle', 600)
       );
     }
-    const tags = [i === head && 'head', i === tail && 'tail'].filter(Boolean).join(' / ');
-    if (tags) parts.push(label(x + BOX_W / 2, top - 22, tags, FONT * 0.7, 'var(--accent-text,#5B3CC4)', 'middle', 700));
   });
 
   container.innerHTML =
-    `<svg viewBox="0 0 ${width} ${height}" width="100%" style="max-height:70vh;font-family:var(--font,sans-serif)" ` +
+    `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" ` +
+    `style="display:block;margin:0 auto;max-width:min(100%,420px);height:auto;font-family:var(--font,sans-serif)" ` +
     `role="img" aria-label="Doubly linked list: ${esc(nodes.join(' <-> ') || 'empty')}">${parts.join('')}</svg>`;
 }
