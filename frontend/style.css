@@ -49,6 +49,14 @@
   box-sizing: border-box;
 }
 
+/* Many components below set their own `display` (flex/grid/etc). Author
+   rules normally beat the UA default `[hidden] { display: none }`, so
+   without this, toggling `el.hidden = true` on those elements silently did
+   nothing and they stayed on screen. This makes `hidden` always win. */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
@@ -1357,12 +1365,6 @@ kbd {
   color: var(--error-icon);
   font-size: 13px;
   margin-top: 4px;
-}
-
-/* ===== Utility ===== */
-
-.hidden-attr[hidden] {
-  display: none !important;
 }
 
 @media (max-width: 860px) {
