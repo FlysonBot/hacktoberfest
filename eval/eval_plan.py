@@ -9,6 +9,7 @@ Needs GEMINI_API_KEY in the environment.
 """
 
 import json
+import re
 import time
 
 try:
@@ -159,7 +160,10 @@ def norm_ops(raw):
     return [(o.get("op"), tuple(str(a).strip() for a in o.get("args") or [])) for o in raw or []]
 
 
-def check(args, want_structure, want_source, want_initial, want_ops):
+NUMBER = re.compile(r"-?\d+")
+
+
+def check(question, args, want_structure, want_source, want_initial, want_ops):
     """Returns a list of failure reasons (empty = PASS)."""
     problems = []
     structure, source = args.get("structure"), args.get("source")
@@ -169,8 +173,24 @@ def check(args, want_structure, want_source, want_initial, want_ops):
         problems.append(f"source={source!r}, want {want_source!r}")
 
     got_ops = norm_ops(args.get("ops"))
+    got_initial = [str(v).strip() for v in args.get("initial") or []]
+
+    if any(a == "" for _, op_args in got_ops for a in op_args) or "" in got_initial:
+        problems.append("empty-string value in initial or args")
+
+    if structure in ("hash_linear_probing", "hash_chaining"):
+        if not got_initial or not got_initial[0].isdigit() or int(got_initial[0]) <= 0:
+            problems.append(f"initial[0] must be a positive integer table size, got {got_initial[:1]}")
+
+    if want_source == "user_question":
+        # Faithfulness: every number Gemma emits must appear in the question text.
+        question_numbers = set(NUMBER.findall(question))
+        emitted = got_initial + [a for _, op_args in got_ops for a in op_args]
+        invented = sorted({n for v in emitted for n in NUMBER.findall(v)} - question_numbers)
+        if invented:
+            problems.append(f"numbers not in question: {invented}")
+
     if want_initial is not None:
-        got_initial = [str(v).strip() for v in args.get("initial") or []]
         if got_initial != want_initial:
             problems.append(f"initial={got_initial}, want {want_initial}")
         if got_ops != norm_ops(want_ops):
@@ -195,7 +215,7 @@ for i, (question, *expected) in enumerate(CASES, 1):
         print(f"  FAIL  error: {e}\n", flush=True)
         continue
 
-    problems = check(args, *expected)
+    problems = check(question, args, *expected)
     passed += not problems
     print(f"  {'PASS' if not problems else 'FAIL'}  ({model})", flush=True)
     for p in problems:
