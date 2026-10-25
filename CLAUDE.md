@@ -205,7 +205,7 @@ Backend rules:
 - **No audio**: E2B/E4B are not on the Gemini API. Image input works.
 - Thinking: `thinking_level="minimal"` for captions/explain; `"high"` only for `/api/plan` if latency allows.
 - Free tier is about 15 requests/min per key. **Everyone uses their own key** while testing.
-- **`CERTIFICATE_VERIFY_FAILED`** (Avast HTTPS scanning): `pip install truststore`, and put `import truststore; truststore.inject_into_ssl()` before importing `google.genai`.
+- **`CERTIFICATE_VERIFY_FAILED`** (Avast HTTPS scanning): `uv add truststore`, and put `import truststore; truststore.inject_into_ssl()` before importing `google.genai`.
 
 ## Repo layout
 
@@ -214,7 +214,6 @@ backend/
   main.py           FastAPI app + static serving of frontend/
   gemma.py          all Gemini API calls
   prompts.py        system prompts + tool declaration
-  requirements.txt  google-genai, fastapi, uvicorn, truststore
 frontend/
   index.html
   app.js            input box, calls /api/*, wires player
@@ -228,13 +227,14 @@ README.md
 LICENSE
 ```
 
-## Running locally (Windows / PowerShell)
+## Running locally (uv)
 
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r backend/requirements.txt
-uvicorn backend.main:app --reload
+Dependencies live in `pyproject.toml` (Python >=3.12); there is no `requirements.txt`. Add packages with `uv add <pkg>`, never `pip install`.
+
+```bash
+uv sync
+export GEMINI_API_KEY=...   # PowerShell: $env:GEMINI_API_KEY="..."
+uv run uvicorn backend.main:app --reload
 # open http://localhost:8000
 ```
 
@@ -271,3 +271,10 @@ uvicorn backend.main:app --reload
 - Never move algorithm logic or answer-checking into Gemma prompts. It belongs in `frontend/viz/`.
 - Keep changes scoped to the file owner's area unless asked.
 - Prefer simple, demo-safe code over clever code. Deadline is 6:30.
+
+## Status and requirements pointer
+
+- Goal: animate any DS/algorithm concept or the student's own question; JS computes steps/answers, Gemma only picks and explains.
+- Deadline: submit by 6:30 PM (prize page says 8:00; plan for 6:30).
+- Tooling is uv. Layout is settled: root-level `backend/`, `frontend/`, `samples/` (no `src/`). `backend/gemma.py` has the retry/fallback Gemma helper; the rest is still to build.
+- Full requirements: docs/REQUIREMENTS.md

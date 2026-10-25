@@ -18,6 +18,3 @@ def generate(contents: str) -> str:
                 print(f"{model} attempt {attempt + 1} failed: {e.code}")
                 time.sleep(2**attempt)
     raise RuntimeError("All Gemma models failed")
-
-
-print(generate("Explain transformer attention in two sentences."))
