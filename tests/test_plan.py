@@ -41,9 +41,15 @@ def test_op_invalid_for_structure():
     assert any('invalid for bst' in p for p in validate(BST_Q, a))
 
 
-def test_wrong_arg_count():  # eval: 26b returned peek with args ["peek"]
-    a = answer('stack', [], ops(('push', '45'), ('peek', 'peek')))
-    assert any('takes 0 args' in p for p in validate(STACK_Q, a))
+def test_wrong_arg_count():
+    a = answer('stack', [], ops(('push', '45', '56')))
+    assert any('takes 1 args' in p for p in validate(STACK_Q, a))
+
+
+def test_zero_arg_op_junk_repaired():  # real 26b output: pop ["[],"], peek ["peek"], dequeue ["dequeue"]
+    a = answer('stack', [], ops(('push', '45'), ('push', '56'), ('push', '11'), ('pop', '[],'), ('peek', 'peek')))
+    assert validate(STACK_Q + ', Peek', a) == []
+    assert plan.normalize(a)['ops'][3:] == [{'op': 'pop', 'args': []}, {'op': 'peek', 'args': []}]
 
 
 def test_empty_arg():  # eval: args ["", "12"]

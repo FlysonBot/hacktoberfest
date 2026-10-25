@@ -103,7 +103,19 @@ Rules:
   Example: "Pop(numStack)" -> {"op": "pop", "args": []}.
 - Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"]).
 - Students write informally, with typos, missing punctuation, or partial info. Interpret generously; if values
-  are missing, invent a small example instead of refusing. If the structure starts empty, initial must be []."""
+  are missing, invent a small example instead of refusing. If the structure starts empty, initial must be [].
+- Complete examples of correct show_visualization calls (copy this shape exactly):
+  "Explain how a stack works." ->
+  {"structure": "stack", "initial": [], "ops": [{"op": "push", "args": ["5"]}, {"op": "push", "args": ["8"]},
+   {"op": "push", "args": ["2"]}, {"op": "pop", "args": []}, {"op": "peek", "args": []}], "source": "generated_example"}
+  "q is empty. enqueue 4 then 9, dequeue once" ->
+  {"structure": "queue", "initial": [], "ops": [{"op": "enqueue", "args": ["4"]}, {"op": "enqueue", "args": ["9"]},
+   {"op": "dequeue", "args": []}], "source": "user_question"}
+  "list is 3 7, insert 5 after 3" ->
+  {"structure": "singly_linked_list", "initial": ["3", "7"], "ops": [{"op": "insert_after", "args": ["3", "5"]}],
+   "source": "user_question"}
+- Every push / enqueue / append / prepend / insert / search / remove has exactly one value in args.
+  Every pop / peek / dequeue / remove_max / sort has args: [] (never a value, word, or bracket)."""
 
 
 def ops(*pairs):
