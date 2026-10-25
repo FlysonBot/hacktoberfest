@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Viz preview</title>
+<link rel="stylesheet" href="../style.css">
 <style>
-  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; background: #FCFAFF; color: #1D1D1F; }
-  .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
-  button, select { font: inherit; font-size: 18px; padding: 8px 16px; border-radius: 8px; border: 1px solid #C9C6BF; background: #fff; cursor: pointer; }
-  button:disabled { opacity: 0.4; cursor: default; }
-  #viz { background: #F4EEFF; border-radius: 14px; padding: 16px; min-height: 200px; }
-  #meta { font-family: ui-monospace, Menlo, monospace; font-size: 15px; margin-top: 12px; color: #555; white-space: pre-wrap; }
-  #question { margin-top: 16px; font-size: 18px; }
-  #question button { margin: 6px 8px 0 0; }
+  body { font-family: var(--font, sans-serif); margin: 0; padding: 24px; background: var(--bg, #FCFAFF); color: var(--text, #1D1D1F); }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .bar button, .bar select, .bar input { font: inherit; font-size: 15px; padding: 6px 12px; border-radius: 8px; border: 1px solid #C9C6BF; background: #fff; }
+  .bar button { cursor: pointer; }
+  .bar button:disabled { opacity: 0.4; cursor: default; }
+  .bar input { min-width: 240px; }
+  #viz { background: var(--stage, #F4EEFF); border-radius: 14px; padding: 20px 16px; min-height: 160px; }
+  #meta { font-family: ui-monospace, Menlo, monospace; font-size: 13px; margin-top: 12px; color: #555; white-space: pre-wrap; }
+  #question { margin-top: 16px; font-size: 16px; }
+  #question button { margin: 6px 8px 0 0; font: inherit; padding: 4px 10px; border-radius: 8px; border: 1px solid #C9C6BF; background: #fff; cursor: pointer; }
   .right { color: #1E7B3A; font-weight: 600; } .wrong { color: #8C1D18; font-weight: 600; }
   #error { color: #8C1D18; }
 </style>
@@ -20,13 +23,14 @@
 <body>
 <h1>Viz preview</h1>
 <div class="bar">
-  <select id="structure">
-    <option value="stack">stack (samples/plan_stack.json)</option>
-    <option value="doubly_linked_list">doubly_linked_list (samples/plan_doubly_linked_list.json)</option>
-  </select>
+  <select id="structure"></select>
   <button id="back">◀ Back</button>
   <button id="next">Next ▶</button>
   <span id="counter"></span>
+</div>
+<div class="bar">
+  <input id="sandbox" placeholder="sandbox ops, e.g. insert 70, search 70">
+  <button id="run">Run ops</button>
 </div>
 <div id="viz"></div>
 <div id="meta"></div>
@@ -34,22 +38,44 @@
 <p id="error"></p>
 
 <script type="module">
+import { PLANS } from './_samples.js';
+
 const $ = (id) => document.getElementById(id);
-let mod, steps = [], qs = [], index = 0;
+let mod, plan, ops, steps = [], qs = [], index = 0;
+
+for (const name of Object.keys(PLANS)) {
+  const o = document.createElement('option');
+  o.value = o.textContent = name;
+  $('structure').append(o);
+}
 
 async function load(structure) {
   try {
     mod = await import(`./${structure}.js`);
-    const plan = await (await fetch(`../../samples/plan_${structure}.json`)).json();
-    steps = mod.run(plan.initial, plan.ops);
-    qs = mod.questions(steps);
-    index = 0;
-    $('error').textContent = '';
-    show();
+    plan = PLANS[structure];
+    ops = plan.ops.slice();
+    compute(0);
   } catch (e) {
-    $('error').textContent = `Failed to load ${structure}: ${e.message}. Serve the repo root over HTTP (see README/DEMO), not file://.`;
+    $('error').textContent = `Failed to load ${structure}: ${e.message}. Open this page over HTTP, not file://.`;
   }
 }
+
+function compute(startAt) {
+  steps = mod.run(plan.initial, ops);
+  qs = mod.questions(steps);
+  index = Math.min(startAt, steps.length - 1);
+  $('error').textContent = '';
+  show();
+}
+
+// Same "op args, op args" format as the app's sandbox.
+$('run').onclick = () => {
+  const extra = $('sandbox').value.split(',').map((p) => p.trim()).filter(Boolean)
+    .map((p) => { const [op, ...args] = p.split(/\s+/); return { op: op.toLowerCase(), args }; });
+  const first = steps.length;
+  ops = ops.concat(extra);
+  compute(first);
+};
 
 function show() {
   const step = steps[index];
@@ -84,6 +110,7 @@ $('back').onclick = () => { if (index > 0) { index--; show(); } };
 $('next').onclick = () => { if (index < steps.length - 1) { index++; show(); } };
 $('structure').onchange = (e) => load(e.target.value);
 document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
   if (e.key === 'ArrowLeft') $('back').click();
   if (e.key === 'ArrowRight') $('next').click();
 });
