@@ -79,11 +79,12 @@ def validate(text: str, args, has_image: bool = False) -> list[str]:
         )
         if invented:
             problems.append(f'numbers not in the question: {dict(invented)}')
-        # order: numbers in ops must appear in the question in the same order (not initial: BST level order)
+        # order: each op's LAST arg (the value pushed/inserted/searched) must appear in the question in op order.
+        # Last arg only: "insert 8 after 30" lists 8 first but args are ["30", "8"]. Not initial: BST level order.
         remaining = iter(NUMBER.findall(text))
         if not all(
             n in remaining
-            for n in NUMBER.findall(' '.join(a for _, op_args in ops for a in op_args))
+            for n in NUMBER.findall(' '.join(op_args[-1] for _, op_args in ops if op_args))
         ):
             problems.append("ops are not in the question's order")
     return problems

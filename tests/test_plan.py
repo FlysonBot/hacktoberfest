@@ -155,3 +155,9 @@ def test_invalid_twice_serves_cached_demo_plan(monkeypatch):
     bad = answer('stack', ['// junk'], ops(('pop',)))
     fake_gemma(monkeypatch, bad, bad)
     assert plan.make_plan(STACK_DEMO_Q)['ops'][0] == {'op': 'push', 'args': ['45']}
+
+
+def test_insert_after_in_student_word_order():  # "insert 8 after 30": text order 8, 30; args ["30", "8"]
+    q = 'my hw: list is 12 30, insert 8 after 30, 45 after 12'
+    a = answer('doubly_linked_list', ['12', '30'], ops(('insert_after', '30', '8'), ('insert_after', '12', '45')))
+    assert validate(q, a) == []

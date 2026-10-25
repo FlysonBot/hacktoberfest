@@ -87,7 +87,9 @@ Rules:
   Example: "Insert 50, 30, 70" -> insert ["50"], insert ["30"], insert ["70"].
 - pop, peek, dequeue, remove_max, and sort take args: []. Never put words or brackets in args.
   Example: "Pop(numStack)" -> {"op": "pop", "args": []}.
-- Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"])."""
+- Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"]).
+- Students write informally, with typos, missing punctuation, or partial info. Interpret generously; if values
+  are missing, invent a small example instead of refusing. If the structure starts empty, initial must be []."""
 
 CAPTIONS_PROMPT = """You write captions for a step-by-step data-structure animation for CSE 12 students.
 You get a list of steps; each has an `action` and a `detail` object with facts computed by code.
