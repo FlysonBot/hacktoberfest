@@ -197,5 +197,19 @@ if (bst) {
   });
 }
 
+const { queue } = mods;
+if (queue) {
+  test('queue: FIFO order, dequeue/peek on empty, dequeue question answer is the front', () => {
+    const s = queue.run(['1'], [{ op: 'dequeue', args: [] }, { op: 'dequeue', args: [] }, { op: 'peek', args: [] }, { op: 'enqueue', args: ['2'] }]);
+    assert.deepStrictEqual(s[1].detail, { value: 1, size: 0, new_front: null });
+    assert.deepStrictEqual(s[2].detail, { value: null, size: 0, empty: true });
+    assert.deepStrictEqual(s[3].detail, { value: null, size: 0, empty: true });
+    assert.deepStrictEqual(s[4].state, { items: [2], front: 0, back: 0 });
+    const plan = load('samples/plan_queue.json');
+    const q = queue.questions(queue.run(plan.initial, plan.ops)).find((x) => x.prompt === 'Which value does dequeue remove?');
+    assert.deepStrictEqual([q.stepIndex, q.answer, q.choices], [4, '7', ['7', '14', '21']]);
+  });
+}
+
 console.log(failures ? `\n${failures} failed` : '\nAll viz tests passed');
 process.exit(failures ? 1 : 0);
