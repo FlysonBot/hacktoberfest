@@ -41,4 +41,16 @@ export const PLANS = {
     ],
     source: 'user_question',
   },
+  singly_linked_list: {
+    structure: 'singly_linked_list',
+    initial: ['5', '9'],
+    ops: [
+      { op: 'append', args: ['12'] },
+      { op: 'prepend', args: ['3'] },
+      { op: 'insert_after', args: ['9', '7'] },
+      { op: 'remove', args: ['5'] },
+      { op: 'search', args: ['12'] },
+    ],
+    source: 'user_question',
+  },
 };
