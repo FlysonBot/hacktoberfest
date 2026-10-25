@@ -1,5 +1,5 @@
 import { postPlan, postCaptions, postExplain, ApiError } from './api.js';
-import { Player, isAtEnd } from './player.js';
+import { Player } from './player.js';
 import { isCorrectChoice, getCorrectChoiceText, describeChoice } from './answerAdapter.js';
 import { fallbackCaption, formatActionTitle } from './captions.js';
 import { parseSandboxOps } from './sandbox.js';
@@ -76,8 +76,6 @@ const els = {
 
   progressRow: document.getElementById('progress-row'),
   btnBack: document.getElementById('btn-back'),
-  btnPlay: document.getElementById('btn-play'),
-  playIcon: document.getElementById('play-icon'),
   btnNext: document.getElementById('btn-next'),
   btnRestart: document.getElementById('btn-restart'),
   stepCounter: document.getElementById('step-counter'),
@@ -169,7 +167,6 @@ function init() {
 
   els.btnBack.addEventListener('click', () => player.back());
   els.btnNext.addEventListener('click', () => player.next());
-  els.btnPlay.addEventListener('click', () => player.togglePlay());
   els.btnRestart.addEventListener('click', onRestartClick);
 
   els.replayBtn.addEventListener('click', onRestartClick);
@@ -555,15 +552,10 @@ function hideTextFallback() {
 
 // ---------- Player wiring ----------
 
-function onPlayerChange({ index, length, step, playing, canGoBack, canGoNext }) {
+function onPlayerChange({ index, length, step, canGoBack, canGoNext }) {
   els.btnBack.disabled = !canGoBack;
   els.btnNext.disabled = !canGoNext;
   els.btnRestart.disabled = length === 0;
-  els.btnPlay.disabled = length === 0;
-  els.playIcon.innerHTML = playing
-    ? '<rect x="6.5" y="5" width="4" height="14" rx="1.2"></rect><rect x="13.5" y="5" width="4" height="14" rx="1.2"></rect>'
-    : '<path d="M8 5.2v13.6c0 .8.9 1.3 1.6.8l10-6.8c.6-.4.6-1.2 0-1.6l-10-6.8C8.9 3.9 8 4.4 8 5.2z"></path>';
-  els.btnPlay.setAttribute('aria-label', playing ? 'Pause' : 'Play');
   els.stepCounter.textContent = length ? `Step ${index + 1} of ${length}` : '';
   els.stepCounter.classList.toggle('is-off', length === 0);
 
@@ -583,10 +575,6 @@ function onPlayerChange({ index, length, step, playing, canGoBack, canGoNext }) 
   renderPracticePanel();
   renderCompletePanel();
   renderOutline();
-
-  if (playing && findQuestionForStep(index)) {
-    player.pause();
-  }
 }
 
 function renderProgressSegments(index, length) {
@@ -636,9 +624,6 @@ function onKeyDown(e) {
     player.back();
   } else if (e.key === 'ArrowRight') {
     player.next();
-  } else if (e.key === ' ') {
-    e.preventDefault();
-    player.togglePlay();
   } else if (e.key === 'r' || e.key === 'R') {
     onRestartClick();
   } else if (/^[1-9]$/.test(e.key)) {

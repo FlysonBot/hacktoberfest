@@ -259,26 +259,6 @@ button {
   height: 44px;
 }
 
-.play-button {
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--accent);
-  color: var(--on-accent);
-  cursor: pointer;
-  box-shadow: var(--shadow-primary);
-}
-
-.play-button:disabled {
-  background: #D4D1CA;
-  box-shadow: none;
-  cursor: default;
-}
-
 /* ===== Start screen / composer ===== */
 
 .start-screen {
