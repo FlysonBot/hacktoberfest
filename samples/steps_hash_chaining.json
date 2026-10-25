@@ -1,0 +1,453 @@
+{
+  "structure": "hash_chaining",
+  "initial": [
+    "7"
+  ],
+  "ops": [
+    {
+      "op": "insert",
+      "args": [
+        "10"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "17"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "3"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "24"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "5"
+      ]
+    },
+    {
+      "op": "search",
+      "args": [
+        "3"
+      ]
+    },
+    {
+      "op": "remove",
+      "args": [
+        "17"
+      ]
+    },
+    {
+      "op": "search",
+      "args": [
+        "99"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ]
+      },
+      "highlights": [],
+      "action": "initial",
+      "detail": {
+        "size": 7,
+        "keys": []
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10
+          ],
+          [],
+          [],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 10,
+        "hash": 3,
+        "position": 0,
+        "chain_length": 1
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17
+          ],
+          [],
+          [],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 17,
+        "hash": 3,
+        "position": 1,
+        "chain_length": 2
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3
+          ],
+          [],
+          [],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 3,
+        "hash": 3,
+        "position": 2,
+        "chain_length": 3
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 24,
+        "hash": 3,
+        "position": 3,
+        "chain_length": 4
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 5,
+        "hash": 5,
+        "position": 0,
+        "chain_length": 1
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "search",
+      "detail": {
+        "key": 3,
+        "hash": 3,
+        "position": 0,
+        "current": 10,
+        "found": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "search",
+      "detail": {
+        "key": 3,
+        "hash": 3,
+        "position": 1,
+        "current": 17,
+        "found": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "search",
+      "detail": {
+        "key": 3,
+        "hash": 3,
+        "position": 2,
+        "current": 3,
+        "found": true
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "remove",
+      "detail": {
+        "key": 17,
+        "hash": 3,
+        "position": 0,
+        "current": 10,
+        "found": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            17,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "remove",
+      "detail": {
+        "key": 17,
+        "hash": 3,
+        "position": 1,
+        "current": 17,
+        "found": true
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        3
+      ],
+      "action": "remove",
+      "detail": {
+        "key": 17,
+        "hash": 3,
+        "position": 1,
+        "removed": true
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 7,
+        "buckets": [
+          [],
+          [],
+          [],
+          [
+            10,
+            3,
+            24
+          ],
+          [],
+          [
+            5
+          ],
+          []
+        ]
+      },
+      "highlights": [
+        1
+      ],
+      "action": "search",
+      "detail": {
+        "key": 99,
+        "hash": 1,
+        "position": null,
+        "current": null,
+        "found": false
+      },
+      "caption": ""
+    }
+  ]
+}

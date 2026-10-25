@@ -238,5 +238,29 @@ if (probing) {
   });
 }
 
+const chaining = mods.hash_chaining;
+if (chaining) {
+  test('hash_chaining: sample questions ask which bucket each insert goes into', () => {
+    const plan = load('samples/plan_hash_chaining.json');
+    const qs = chaining.questions(chaining.run(plan.initial, plan.ops)).map((q) => [q.stepIndex, q.answer, q.choices]);
+    assert.deepStrictEqual(qs, [
+      [0, '3', ['0', '2', '3', '4']],
+      [1, '3', ['0', '2', '3', '4']],
+      [2, '3', ['2', '3', '4']],
+      [3, '3', ['2', '3', '4']],
+      [4, '5', ['4', '5', '6']],
+    ]);
+  });
+
+  test('hash_chaining: final sample state, duplicate insert, remove missing, bad size', () => {
+    const plan = load('samples/plan_hash_chaining.json');
+    const s = chaining.run(plan.initial, plan.ops);
+    assert.deepStrictEqual(s.at(-1).state, { size: 7, buckets: [[], [], [], [10, 3, 24], [], [5], []] });
+    assert.equal(chaining.run(['7', '10'], [ins(10)]).at(-1).detail.duplicate, true);
+    assert.deepStrictEqual(chaining.run(['7'], [rem(4)]).at(-1).detail, { key: 4, hash: 4, position: null, current: null, found: false });
+    assert.equal(chaining.run(['x'], [ins(1)])[1].action, 'error');
+  });
+}
+
 console.log(failures ? `\n${failures} failed` : '\nAll viz tests passed');
 process.exit(failures ? 1 : 0);

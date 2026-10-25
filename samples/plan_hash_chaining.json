@@ -1,0 +1,15 @@
+{
+  "structure": "hash_chaining",
+  "initial": ["7"],
+  "ops": [
+    { "op": "insert", "args": ["10"] },
+    { "op": "insert", "args": ["17"] },
+    { "op": "insert", "args": ["3"] },
+    { "op": "insert", "args": ["24"] },
+    { "op": "insert", "args": ["5"] },
+    { "op": "search", "args": ["3"] },
+    { "op": "remove", "args": ["17"] },
+    { "op": "search", "args": ["99"] }
+  ],
+  "source": "user_question"
+}
