@@ -4,6 +4,7 @@ import { isCorrectChoice, getCorrectChoiceText, describeChoice } from './answerA
 import { fallbackCaption, formatActionTitle } from './captions.js';
 import { parseSandboxOps } from './sandbox.js';
 import { matchDemoQuestion } from './demoCache.js';
+import { formatPlanSummary } from './planSummary.js';
 
 const PLAN_TIMEOUT_MS = 20000;
 
@@ -52,6 +53,7 @@ const els = {
   regenerateBtn: document.getElementById('regenerate-btn'),
   titleSkeleton: document.getElementById('title-skeleton'),
   titleRow: document.getElementById('title-row'),
+  planSummary: document.getElementById('plan-summary'),
   lessonEyebrow: document.getElementById('lesson-eyebrow'),
   lessonTitle: document.getElementById('lesson-title'),
   lessonMeta: document.getElementById('lesson-meta'),
@@ -118,6 +120,7 @@ const state = {
   structure: null,
   initial: [],
   ops: [],
+  planOps: [],
   vizModule: null,
   steps: [],
   questions: [],
@@ -379,6 +382,7 @@ async function loadStructure(structure, initial, ops) {
   state.structure = structure;
   state.initial = initial;
   state.ops = ops.slice();
+  state.planOps = ops.slice(); // the ops exactly as read from the plan — never mutated by the sandbox
 
   let mod;
   try {
@@ -443,6 +447,7 @@ function resetLesson() {
   state.structure = null;
   state.initial = [];
   state.ops = [];
+  state.planOps = [];
   state.vizModule = null;
   state.steps = [];
   state.questions = [];
@@ -453,6 +458,7 @@ function resetLesson() {
   els.vizContainer.replaceChildren();
   hideStageError();
   hideTextFallback();
+  renderTitleRow();
   renderPracticePanel();
   renderCompletePanel();
   renderOutline();
@@ -508,6 +514,14 @@ function renderTitleRow() {
   els.lessonEyebrow.textContent = label;
   els.lessonTitle.textContent = els.wsQuestionInput.value || label;
   els.lessonMeta.textContent = state.steps.length ? `${state.steps.length} steps` : '';
+
+  if (state.structure) {
+    els.planSummary.hidden = false;
+    els.planSummary.textContent = formatPlanSummary({ structure: state.structure, initial: state.initial, ops: state.planOps });
+  } else {
+    els.planSummary.hidden = true;
+    els.planSummary.textContent = '';
+  }
 }
 
 function showStageError(message) {
