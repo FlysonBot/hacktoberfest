@@ -299,6 +299,10 @@ button {
   border-color: var(--error-border);
 }
 
+/* Transitions between two known fixed heights (96px <-> 64px), not a
+   collapse to/from `auto` — grid-template-rows would cost the same
+   layout recalculation here with no benefit, so height is animated
+   directly. */
 .composer-input {
   display: block;
   width: 100%;
@@ -313,14 +317,33 @@ button {
   color: var(--text);
   background: transparent;
   box-sizing: border-box;
-  transition: height 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: height 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .composer.has-screenshot .composer-input {
   height: 64px;
 }
 
+/* Collapses via grid-template-rows (0fr <-> 1fr) rather than animating
+   max-height/margin/padding directly, which would thrash layout every
+   frame. Margin/padding stay static on the inner content element; only
+   the grid track size and opacity are animated. */
 .screenshot-row {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  overflow: hidden;
+  transition: grid-template-rows 320ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease;
+}
+
+.screenshot-row.is-visible {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.screenshot-row-content {
+  min-height: 0;
+  overflow: hidden;
   margin: 0 14px 12px;
   padding: 10px 4px 10px 10px;
   display: flex;
@@ -328,24 +351,6 @@ button {
   gap: 12px;
   background: var(--muted);
   border-radius: var(--r-lg);
-  overflow: hidden;
-  max-height: 100px;
-  opacity: 1;
-  transform: scale(1);
-  transition:
-    max-height 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 200ms ease,
-    transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    margin 320ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    padding 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.screenshot-row:not(.is-visible) {
-  margin: 0 14px 0;
-  padding: 0 4px 0 10px;
-  max-height: 0;
-  opacity: 0;
-  transform: scale(0.96);
 }
 
 .screenshot-thumb {

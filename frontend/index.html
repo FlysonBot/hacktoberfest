@@ -48,14 +48,16 @@
     ></textarea>
 
     <div class="screenshot-row" id="screenshot-row" aria-hidden="true">
-      <div class="screenshot-thumb"><img id="screenshot-preview-img" alt="Selected screenshot preview" /></div>
-      <div class="screenshot-meta">
-        <div class="screenshot-filename" id="screenshot-filename"></div>
-        <div class="screenshot-sub" id="screenshot-sub"></div>
+      <div class="screenshot-row-content">
+        <div class="screenshot-thumb"><img id="screenshot-preview-img" alt="Selected screenshot preview" /></div>
+        <div class="screenshot-meta">
+          <div class="screenshot-filename" id="screenshot-filename"></div>
+          <div class="screenshot-sub" id="screenshot-sub"></div>
+        </div>
+        <button type="button" id="screenshot-remove" class="remove-chip-button" aria-label="Remove screenshot">
+          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+        </button>
       </div>
-      <button type="button" id="screenshot-remove" class="remove-chip-button" aria-label="Remove screenshot">
-        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
-      </button>
     </div>
     <p id="screenshot-error" class="field-error" role="alert" hidden></p>
 
