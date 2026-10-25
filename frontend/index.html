@@ -87,13 +87,17 @@
   <div class="examples">
     <div class="examples-label">Try an example</div>
     <div class="example-chips" role="group" aria-label="Example prompts">
-      <button type="button" class="chip" data-example="Insert 45, 25, 35 into a size-10 hash table using linear probing.">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14M10 4L8 20M16 4l-2 16"></path></svg>
-        Explain linear probing.
+      <button type="button" class="chip" data-example="Given an empty stack numStack, what are the stack's contents after these operations? Push(numStack, 45), Push(numStack, 56), Push(numStack, 11), Pop(numStack)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M7 20V9m5 11V4m5 16v-7"></path></svg>
+        Demo 1: Stack push/pop
       </button>
-      <button type="button" class="chip" data-example="Insert 50, 30, 70, 20 into a binary search tree.">
+      <button type="button" class="chip" data-example="numList is a doubly-linked list: 12 ⇄ 30. ListInsertAfter(numList, node 30, node 8); ListInsertAfter(numList, node 12, node 45); ListInsertAfter(numList, node 45, node 76)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="2.5"></circle><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><path d="M7.5 12h2M14.5 12h2"></path></svg>
+        Demo 2: Linked list insert
+      </button>
+      <button type="button" class="chip" data-example="Which nodes are visited when searching for 65 in this BST? The root is 21. 21's left child is 12 and right child is 91. 12's children are 11 (left) and 19 (right). 91's children are 65 (left) and 96 (right).">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="5.5" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="18" r="2.5"></circle><path d="M10.6 7.6L7.3 15.8M13.4 7.6l3.3 8.2"></path></svg>
-        Insert 50, 30, 70, 20 into a BST.
+        Demo 3: BST search
       </button>
     </div>
     <p class="examples-footnote">Best for data structures and algorithms: linked lists, stacks, queues, trees, hashing, heaps, sorting.</p>
