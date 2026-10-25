@@ -171,6 +171,8 @@ export function render(container, step) // draws one step (SVG or canvas)
 export function questions(steps)        // -> [{ stepIndex, prompt, choices, answer }]  (JS decides answer)
 ```
 
+- **Demo dependency (Viz):** the `stack` module's `questions()` must include **"Which value does Pop remove?"** on each pop step, with choices = the values pushed so far and answer = the value JS popped (demo: choices 45 / 56 / 11, answer 11). Used in `docs/DEMO.md`.
+
 ### 5. Sandbox
 
 After the animation, the student types their own ops (e.g. `push 5, pop`).
@@ -186,8 +188,12 @@ After the animation, the student types their own ops (e.g. `push 5, pop`).
 | `POST /api/captions` | `{ "structure", "steps": [{action, detail}] }` | `{ "captions": str[] }` (same length as steps) |
 | `POST /api/explain` | `{ "structure", "step": {action, detail}, "prompt", "user_answer", "correct_answer" }` | `{ "explanation": str }` |
 
+**Demo dependency (Frontend):** above the animation, show a read-back line built in JS from the `/api/plan` response: `Here's what I read: <structure>, start <initial>, ops <ops>` (e.g. `Here's what I read: doubly linked list, start 12, 30, ops insert 8 after 30, insert 45 after 12, insert 76 after 45`). **Required for screenshot inputs**, so the student can check what Gemma extracted. Used in `docs/DEMO.md`.
+
 Backend rules:
-- Validate the tool call: `structure` in the enum, every op name valid for that structure, `args` non-empty where the ops table requires a value. Drop unexpected fields. Retry once on invalid output.
+- **System prompt:** the tested `SYSTEM_PROMPT` (and `TOOL_SCHEMA`) live in `eval/eval_plan.py`. Copy them into `backend/prompts.py` rather than writing a new prompt, and keep them in sync.
+- Validate the tool call: `structure` in the enum, every op name valid for that structure, `args` non-empty where the ops table requires a value. Drop unexpected fields.
+- **Retry once on invalid output, with an error note:** resend the question with a short note listing what was wrong (e.g. "Your previous answer was invalid: wrong arg count: peek['peek']. Fix these problems."), same model order. `plan()` / `retry_note()` in `eval/eval_plan.py` show how.
 - Reject empty-string args (eval saw `["", "12"]`); treat as invalid output and retry.
 - **Faithfulness check** for `source: "user_question"`: count occurrences, not just presence — each number's count across `initial` + ops `args` must be <= its count in the user's question text (compare `collections.Counter`s); otherwise retry. (Eval: the 26b fallback turned "50, 30, 70, 20, 40" into "50, 30, 40, 20, 40"; 40 appears once in the question but twice in the output.)
 - **Arg count** per op must match the ops table: `pop`, `peek`, `dequeue`, `remove_max`, `sort` = 0 args; `push`, `enqueue`, `append`, `prepend`, `insert`, `search`, `remove` = 1; `insert_after` = 2. Wrong count = invalid, retry. (Eval: 26b returned `peek` with args `["peek"]` and `dequeue` with `["[],"]`.)
@@ -202,6 +208,7 @@ Backend rules:
 
 - For the 3–4 demo questions, the frontend falls back to cached responses in `samples/` (plan + captions) if the API fails, so the demo never depends on Gemini being up.
 - The **Eval + demo** lead owns those cached files and keeps them in sync with the demo script.
+- Cached responses must include **real captions (not empty)** before the demo. The Eval + demo lead fills them in from `/api/captions` once it works.
 
 ## Gemma / API setup
 
@@ -247,7 +254,7 @@ uv run uvicorn backend.main:app --reload
 
 | Role | Owner | Owns |
 |---|---|---|
-| Frontend | _name_ | `index.html`, `app.js`, `player.js`: input, step player, practice question UI, sandbox input |
+| Frontend | _name_ | `index.html`, `app.js`, `player.js`: input, "Here's what I read" line, step player, practice question UI, sandbox input |
 | Visualizations (JS) | _name_ | `frontend/viz/*`: run / render / questions per structure |
 | Backend + Gemma | _name_ | `backend/*`: endpoints, prompts, tool call, captions, explain |
 | Eval + demo | _name_ | `samples/` (incl. cached demo responses), `eval/`, test questions, demo script, README, submission |
