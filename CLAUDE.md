@@ -188,7 +188,10 @@ After the animation, the student types their own ops (e.g. `push 5, pop`).
 
 Backend rules:
 - Validate the tool call: `structure` in the enum, every op name valid for that structure, `args` non-empty where the ops table requires a value. Drop unexpected fields. Retry once on invalid output.
-- On 503/500 from `gemma-4-31b-it`, retry once on `gemma-4-26b-a4b-it`.
+- Reject empty-string args (eval saw `["", "12"]`); treat as invalid output and retry.
+- **Faithfulness check** for `source: "user_question"`: every number in `initial` and in ops `args` must appear in the user's question text; otherwise retry. (Eval: the 26b fallback turned "50, 30, 70, 20, 40" into "50, 30, 40, 20, 40".)
+- On 503/500 from `gemma-4-31b-it`: for `user_question`, retry 31b once more after a short backoff **before** falling back to `gemma-4-26b-a4b-it`; otherwise fall back to 26b once. Always run the faithfulness check on 26b output.
+- 503 "high demand" on 31b happened on about half the calls during the hackathon, so the cached demo responses (Demo safety) are **required, not optional**.
 - Wrap all JSON parsing in try/except. Models sometimes add text around the JSON.
 - `/api/captions` must return exactly `len(steps)` captions, or the frontend uses fallbacks.
 - Create the client once at module level (`client = genai.Client()`); never chain `genai.Client().models...` inline (it closes the connection before the request).
