@@ -71,3 +71,87 @@ def test_hash_needs_table_size():  # JS computes key % initial[0]
     q = 'Insert 15 into an empty hash table of size 10'
     assert validate(q, answer('hash_chaining', ['10'], ops(('insert', '15')))) == []
     assert any('table size' in p for p in validate(q, answer('hash_chaining', [], ops(('insert', '15')))))
+
+
+DLL_PLAN = answer('doubly_linked_list', ['12', '30'],
+                  ops(('insert_after', '30', '8'), ('insert_after', '12', '45'), ('insert_after', '45', '76')))
+
+
+def test_screenshot_skips_number_checks():  # the numbers are in the image, not the typed text
+    assert validate('Solve this', DLL_PLAN) != []
+    assert validate('Solve this', DLL_PLAN, has_image=True) == []
+
+
+def test_junk_value_rejected():  # eval: initial ["// empty stack"]
+    a = answer('stack', ['// empty stack'], ops(('push', '45'), ('pop',)))
+    assert any('plain number or word' in p for p in validate(STACK_Q, a))
+
+
+def test_bad_shapes_are_problems_not_crashes():
+    for bad in [
+        answer('stack', [], ['push 45']),  # op is a string
+        answer('stack', [], [{'op': 'push', 'args': 45}]),  # args is a number
+        answer('stack', '45', []),  # initial is a string
+        'not a dict',
+    ]:
+        assert validate(STACK_Q, bad) != []
+
+
+def test_source_must_be_valid():
+    a = answer('stack', ['999'], ops(('push', '45')), source='whatever')
+    assert any('source' in p for p in validate(STACK_Q, a))
+    a.pop('source')
+    assert any('source' in p for p in validate(STACK_Q, a))
+
+
+def test_empty_ops_ok_for_typed_question_only():
+    q = 'Show me this BST: 50, 30, 70'
+    assert validate(q, answer('bst', ['50', '30', '70'], [])) == []
+    assert 'no ops' in validate(q, answer('bst', ['50', '30', '70'], [], source='generated_example'))
+
+
+# make_plan with Gemma mocked out
+
+import pytest  # noqa: E402
+
+from backend import gemma, plan  # noqa: E402
+
+STACK_DEMO_Q = ("Given an empty stack numStack, what are the stack's contents after these operations? "
+                'Push(numStack, 45), Push(numStack, 56), Push(numStack, 11), Pop(numStack)')
+
+
+def fake_gemma(monkeypatch, *replies):
+    """Each call returns the next reply; an Exception reply is raised instead."""
+    calls = []
+
+    def call_tool(text, config, image_base64=None):
+        reply = replies[len(calls)]
+        calls.append(text)
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+    monkeypatch.setattr(gemma, 'call_tool', call_tool)
+    return calls
+
+
+def test_pop_without_args_key(monkeypatch):  # used to KeyError -> 500
+    fake_gemma(monkeypatch, answer('stack', [], [{'op': 'push', 'args': ['45']}, {'op': 'pop'}]))
+    assert plan.make_plan('Push 45, Pop')['ops'] == [{'op': 'push', 'args': ['45']}, {'op': 'pop', 'args': []}]
+
+
+def test_outage_raises_for_normal_question(monkeypatch):  # main.py turns this into a 503
+    calls = fake_gemma(monkeypatch, gemma.GemmaUnavailable())
+    with pytest.raises(gemma.GemmaUnavailable):
+        plan.make_plan('Push 5, Pop')
+    assert len(calls) == 1  # no second round on an outage
+
+
+def test_outage_serves_cached_demo_plan(monkeypatch):
+    fake_gemma(monkeypatch, gemma.GemmaUnavailable())
+    assert plan.make_plan(STACK_DEMO_Q.replace(', ', ',\n'))['structure'] == 'stack'  # spacing doesn't matter
+
+
+def test_invalid_twice_serves_cached_demo_plan(monkeypatch):
+    bad = answer('stack', ['// junk'], ops(('pop',)))
+    fake_gemma(monkeypatch, bad, bad)
+    assert plan.make_plan(STACK_DEMO_Q)['ops'][0] == {'op': 'push', 'args': ['45']}

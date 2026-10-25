@@ -1,3 +1,4 @@
+import mimetypes
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend.captions import make_captions, make_explanation
+from backend.gemma import GemmaUnavailable
 from backend.plan import make_plan
 
 FRONTEND = Path(__file__).parent.parent / 'frontend'
@@ -33,7 +35,10 @@ class ExplainRequest(BaseModel):
 
 @app.post('/api/plan')
 def plan(req: PlanRequest):
-    return make_plan(req.text, req.image_base64)
+    try:
+        return make_plan(req.text, req.image_base64)
+    except GemmaUnavailable:  # frontend shows this in its error banner with a Retry button
+        raise HTTPException(503, 'Gemma is busy right now. Try again in a minute.')
 
 
 # On failure, captions/explain return 502; the frontend then shows its own fallback text.
@@ -52,6 +57,8 @@ def explain(req: ExplainRequest):
         raise HTTPException(502, 'Gemma explanation failed')
     return {'explanation': result}
 
+
+mimetypes.add_type('text/javascript', '.js')  # some Windows registries map .js to text/plain, which breaks ES modules
 
 # Mounted last so /api/* routes win; serves frontend/index.html at /.
 app.mount('/', StaticFiles(directory=FRONTEND, html=True), name='frontend')
