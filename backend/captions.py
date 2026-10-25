@@ -8,10 +8,12 @@ from backend.prompts import CAPTIONS_PROMPT, EXPLAIN_PROMPT
 captions_config = types.GenerateContentConfig(
     system_instruction=CAPTIONS_PROMPT,
     thinking_config=types.ThinkingConfig(thinking_level='minimal'),
+    http_options=types.HttpOptions(timeout=20_000),  # ms; real calls took ~2s
 )
 explain_config = types.GenerateContentConfig(
     system_instruction=EXPLAIN_PROMPT,
     thinking_config=types.ThinkingConfig(thinking_level='minimal'),
+    http_options=types.HttpOptions(timeout=20_000),  # ms; real calls took ~1s
 )
 
 
@@ -34,8 +36,11 @@ def make_captions(structure: str, steps: list[dict]) -> list[str] | None:
     """One caption per step, or None (frontend then uses captions built from `detail`)."""
     facts = [{'step': i, 'action': s.get('action'), 'detail': s.get('detail')} for i, s in enumerate(steps)]
     contents = f'Structure: {structure}\n{len(steps)} steps:\n{json.dumps(facts)}'
-    for _ in range(2):  # retry once on a bad reply
-        captions = parse_captions(gemma.generate(contents, captions_config), len(steps))
+    for _ in range(2):  # retry once on a garbled reply
+        reply = gemma.generate(contents, captions_config)
+        if reply is None:  # API down: retrying only delays the frontend's fallback captions
+            return None
+        captions = parse_captions(reply, len(steps))
         if captions is not None:
             return captions
     return None

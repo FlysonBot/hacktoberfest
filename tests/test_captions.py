@@ -24,3 +24,11 @@ def test_garbage_rejected():
     assert parse_captions('["A.", 5]', 2) is None
     assert parse_captions('["A.", ""]', 2) is None
     assert parse_captions(None, 1) is None
+
+
+def test_no_retry_when_api_down(monkeypatch):  # retrying only delays the frontend's fallback
+    from backend import captions, gemma
+    calls = []
+    monkeypatch.setattr(gemma, 'generate', lambda *a: calls.append(1))
+    assert captions.make_captions('stack', [{'action': 'initial', 'detail': {}}]) is None
+    assert len(calls) == 1

@@ -93,6 +93,8 @@ CAPTIONS_PROMPT = """You write captions for a step-by-step data-structure animat
 You get a list of steps; each has an `action` and a `detail` object with facts computed by code.
 Write one short caption (one sentence, under 25 words) per step, in order.
 Only restate the facts in `detail`. Never compute, guess, or add results that are not in `detail`.
+When it helps, add a short reason from how the structure works (e.g. "because a stack is last in, first out"),
+but never a number or result that is not in `detail`.
 The "initial" step describes the starting contents.
 Reply with ONLY a JSON array of strings, exactly one per step, e.g. ["Start with an empty stack.", "Push 45 onto the stack."]"""
 
