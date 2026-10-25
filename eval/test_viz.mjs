@@ -211,5 +211,32 @@ if (queue) {
   });
 }
 
+const probing = mods.hash_linear_probing;
+if (probing) {
+  test('hash_linear_probing: sample questions ask where each insert lands', () => {
+    const plan = load('samples/plan_hash_linear_probing.json');
+    const qs = probing.questions(probing.run(plan.initial, plan.ops)).map((q) => [q.stepIndex, q.prompt, q.answer, q.choices]);
+    assert.deepStrictEqual(qs, [
+      [0, 'Which bucket does 45 end up in?', '5', ['5', '6', '7']],
+      [1, 'Which bucket does 25 end up in?', '6', ['5', '6', '7']],
+      [3, 'Which bucket does 35 end up in?', '7', ['5', '6', '7']],
+      [14, 'Which bucket does 55 end up in?', '6', ['5', '6', '7']],
+    ]);
+  });
+
+  test('hash_linear_probing: wraparound, full table, negative key, duplicate, bad size', () => {
+    const wrap = probing.run(['5', '9'], [ins(4)]); // 9 sits in bucket 4, so 4 wraps to bucket 0
+    assert.deepStrictEqual(wrap.at(-1).detail, { key: 4, hash: 4, probes: [4, 0], placed: 0 });
+    const full = probing.run(['2', '1', '2'], [ins(3), find(5)]);
+    assert.equal(full.find((s) => s.detail.full).detail.placed, null);
+    assert.equal(full.at(-1).detail.stopped, 'full');
+    assert.equal(probing.run(['7'], [ins(-3)]).at(-1).detail.hash, 4);
+    assert.equal(probing.run(['7', '10'], [ins(10)]).at(-1).detail.duplicate, true);
+    const bad = probing.run(['0'], [ins(3)]);
+    assert.equal(bad[0].detail.error.includes('positive integer'), true);
+    assert.equal(bad[1].action, 'error');
+  });
+}
+
 console.log(failures ? `\n${failures} failed` : '\nAll viz tests passed');
 process.exit(failures ? 1 : 0);

@@ -53,4 +53,18 @@ export const PLANS = {
     ],
     source: 'user_question',
   },
+  hash_linear_probing: {
+    structure: 'hash_linear_probing',
+    initial: ['10'],
+    ops: [
+      { op: 'insert', args: ['45'] },
+      { op: 'insert', args: ['25'] },
+      { op: 'insert', args: ['35'] },
+      { op: 'search', args: ['35'] },
+      { op: 'remove', args: ['25'] },
+      { op: 'search', args: ['35'] },
+      { op: 'insert', args: ['55'] },
+    ],
+    source: 'user_question',
+  },
 };
