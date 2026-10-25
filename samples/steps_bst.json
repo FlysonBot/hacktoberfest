@@ -1,0 +1,81 @@
+{
+  "structure": "bst",
+  "initial": ["21", "12", "91", "11", "19", "65", "96"],
+  "ops": [
+    { "op": "search", "args": ["65"] }
+  ],
+  "steps": [
+    {
+      "state": {
+        "root": 21,
+        "nodes": [
+          { "value": 21, "left": 12, "right": 91 },
+          { "value": 12, "left": 11, "right": 19 },
+          { "value": 91, "left": 65, "right": 96 },
+          { "value": 11, "left": null, "right": null },
+          { "value": 19, "left": null, "right": null },
+          { "value": 65, "left": null, "right": null },
+          { "value": 96, "left": null, "right": null }
+        ]
+      },
+      "highlights": [],
+      "action": "initial",
+      "detail": { "values": [21, 12, 91, 11, 19, 65, 96] },
+      "caption": ""
+    },
+    {
+      "state": {
+        "root": 21,
+        "nodes": [
+          { "value": 21, "left": 12, "right": 91 },
+          { "value": 12, "left": 11, "right": 19 },
+          { "value": 91, "left": 65, "right": 96 },
+          { "value": 11, "left": null, "right": null },
+          { "value": 19, "left": null, "right": null },
+          { "value": 65, "left": null, "right": null },
+          { "value": 96, "left": null, "right": null }
+        ]
+      },
+      "highlights": [21],
+      "action": "search",
+      "detail": { "target": 65, "current": 21, "comparison": "greater", "next": "right", "found": false, "path": [21] },
+      "caption": ""
+    },
+    {
+      "state": {
+        "root": 21,
+        "nodes": [
+          { "value": 21, "left": 12, "right": 91 },
+          { "value": 12, "left": 11, "right": 19 },
+          { "value": 91, "left": 65, "right": 96 },
+          { "value": 11, "left": null, "right": null },
+          { "value": 19, "left": null, "right": null },
+          { "value": 65, "left": null, "right": null },
+          { "value": 96, "left": null, "right": null }
+        ]
+      },
+      "highlights": [21, 91],
+      "action": "search",
+      "detail": { "target": 65, "current": 91, "comparison": "less", "next": "left", "found": false, "path": [21, 91] },
+      "caption": ""
+    },
+    {
+      "state": {
+        "root": 21,
+        "nodes": [
+          { "value": 21, "left": 12, "right": 91 },
+          { "value": 12, "left": 11, "right": 19 },
+          { "value": 91, "left": 65, "right": 96 },
+          { "value": 11, "left": null, "right": null },
+          { "value": 19, "left": null, "right": null },
+          { "value": 65, "left": null, "right": null },
+          { "value": 96, "left": null, "right": null }
+        ]
+      },
+      "highlights": [21, 91, 65],
+      "action": "search",
+      "detail": { "target": 65, "current": 65, "comparison": "equal", "next": null, "found": true, "path": [21, 91, 65] },
+      "caption": ""
+    }
+  ]
+}

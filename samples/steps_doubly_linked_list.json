@@ -1,0 +1,39 @@
+{
+  "structure": "doubly_linked_list",
+  "initial": ["12", "30"],
+  "ops": [
+    { "op": "insert_after", "args": ["30", "8"] },
+    { "op": "insert_after", "args": ["12", "45"] },
+    { "op": "insert_after", "args": ["45", "76"] }
+  ],
+  "steps": [
+    {
+      "state": { "nodes": [12, 30], "head": 0, "tail": 1 },
+      "highlights": [],
+      "action": "initial",
+      "detail": { "values": [12, 30] },
+      "caption": ""
+    },
+    {
+      "state": { "nodes": [12, 30, 8], "head": 0, "tail": 2 },
+      "highlights": [1, 2],
+      "action": "insert_after",
+      "detail": { "after": 30, "value": 8, "index": 2, "new_tail": true },
+      "caption": ""
+    },
+    {
+      "state": { "nodes": [12, 45, 30, 8], "head": 0, "tail": 3 },
+      "highlights": [0, 1],
+      "action": "insert_after",
+      "detail": { "after": 12, "value": 45, "index": 1, "new_tail": false },
+      "caption": ""
+    },
+    {
+      "state": { "nodes": [12, 45, 76, 30, 8], "head": 0, "tail": 4 },
+      "highlights": [1, 2],
+      "action": "insert_after",
+      "detail": { "after": 45, "value": 76, "index": 2, "new_tail": false },
+      "caption": ""
+    }
+  ]
+}
