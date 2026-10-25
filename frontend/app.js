@@ -3,6 +3,9 @@ import { Player, isAtEnd } from './player.js';
 import { isCorrectChoice, getCorrectChoiceText, describeChoice } from './answerAdapter.js';
 import { fallbackCaption, formatActionTitle } from './captions.js';
 import { parseSandboxOps } from './sandbox.js';
+import { matchDemoQuestion } from './demoCache.js';
+
+const PLAN_TIMEOUT_MS = 20000;
 
 // Tier 1 + Tier 2 structures from CLAUDE.md's show_visualization enum. A
 // structure is only ever loaded from here, as frontend/viz/<structure>.js —
@@ -122,6 +125,7 @@ const state = {
   screenshot: { file: null, base64: null, previewUrl: null },
   planRequestToken: 0,
   planAbortController: null,
+  planTimedOut: false,
   captionsRequestToken: 0,
   captionsSettled: true,
   explainTokenSeq: 0,
@@ -253,7 +257,16 @@ async function onGenerateClick(queryOverride) {
 
   hidePlanError();
   els.wsQuestionInput.value = text;
+
+  const demoMatch = matchDemoQuestion(text);
+  if (demoMatch) {
+    const usedCache = await tryLoadCachedDemo(demoMatch);
+    if (usedCache) return;
+    // Cache file failed to load (e.g. missing) — fall through to the live call below.
+  }
+
   state.planAbortController = new AbortController();
+  state.planTimedOut = false;
   setScreen('workspace');
   setWorkspacePhase('generating');
 
@@ -261,26 +274,62 @@ async function onGenerateClick(queryOverride) {
   const payload = { text };
   if (state.screenshot.base64) payload.image_base64 = state.screenshot.base64;
 
+  const timeoutId = setTimeout(() => {
+    state.planTimedOut = true;
+    state.planAbortController.abort();
+  }, PLAN_TIMEOUT_MS);
+
   devSetStatus('POST /api/plan — sending…');
   try {
     const response = await postPlan(payload, { signal: state.planAbortController.signal });
+    clearTimeout(timeoutId);
     if (token !== state.planRequestToken) return; // superseded
     devSetStatus('POST /api/plan — 200 OK');
     setMode('live');
     await handlePlanResponse(response);
   } catch (err) {
+    clearTimeout(timeoutId);
     if (token !== state.planRequestToken) return;
-    if (err && err.name === 'AbortError') return; // cancelled; cancelGenerate() already reset the screen
+    if (err && err.name === 'AbortError') {
+      if (!state.planTimedOut) return; // user clicked Cancel; cancelGenerate() already reset the screen
+      const timeoutErr = new Error(`/api/plan did not respond within ${PLAN_TIMEOUT_MS / 1000} seconds.`);
+      handleApiError('/api/plan', timeoutErr);
+      setScreen('start');
+      showPlanError(`${timeoutErr.message} Please retry.`);
+      return;
+    }
     handleApiError('/api/plan', err);
     setScreen('start');
     showPlanError(describeError(err), err instanceof ApiError ? err.status : null);
   }
 }
 
-async function handlePlanResponse(response, { manual = false } = {}) {
+// Demo safety net: the 3 questions in docs/DEMO.md load instantly from a
+// local cached plan instead of calling the (possibly slow or rate-limited)
+// live /api/plan, so the demo video never depends on Gemma being up.
+// Captions still come from the live /api/captions as normal.
+async function tryLoadCachedDemo(demoMatch) {
+  setScreen('workspace');
+  setWorkspacePhase('generating');
+  devSetStatus(`Loading cached demo plan — ${demoMatch.file}`);
+  try {
+    const res = await fetch(demoMatch.file);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    setMode('cached');
+    devSetStatus(`Cached demo plan loaded — ${demoMatch.file}`);
+    await handlePlanResponse(json, { source: 'cached' });
+    return true;
+  } catch (err) {
+    devLogError('demo cache', `Failed to load ${demoMatch.file}: ${err.message}`);
+    return false;
+  }
+}
+
+async function handlePlanResponse(response, { source = 'live' } = {}) {
   // Record the raw response for the backend teammate before anything else,
   // so /api/plan is inspectable even if no viz module exists yet.
-  devShowPlanPreview(response, manual);
+  devShowPlanPreview(response, source);
 
   if (!response || typeof response !== 'object') {
     setScreen('start');
@@ -1040,18 +1089,23 @@ function hidePlanError() {
 
 // ---------- Developer tools ----------
 
+const MODE_LABELS = { live: 'Live API', manual: 'Manual JSON', cached: 'Cached demo response' };
+
 function setMode(mode) {
   state.mode = mode;
-  els.devMode.textContent = mode === 'live' ? 'Live API' : 'Manual JSON';
+  els.devMode.textContent = MODE_LABELS[mode] || mode;
 }
 
 function devSetStatus(text) {
   els.devStatus.textContent = `${text} — ${new Date().toLocaleTimeString()}`;
 }
 
-function devShowPlanPreview(response, manual) {
-  const label = manual ? '[manual test input, not from the live backend]\n' : '';
-  els.devPlanPreview.textContent = label + JSON.stringify(response, null, 2);
+function devShowPlanPreview(response, source) {
+  const labels = {
+    manual: '[manual test input, not from the live backend]\n',
+    cached: '[cached demo response, not a live /api/plan call]\n',
+  };
+  els.devPlanPreview.textContent = (labels[source] || '') + JSON.stringify(response, null, 2);
 }
 
 function devLogError(source, message) {
@@ -1098,7 +1152,7 @@ function onLoadManualJson() {
   ++state.planRequestToken; // invalidate any in-flight live /api/plan request
   devSetStatus('Manual plan response loaded');
   setScreen('workspace');
-  handlePlanResponse(parsed, { manual: true });
+  handlePlanResponse(parsed, { source: 'manual' });
 }
 
 function showDevJsonError(msg) {
