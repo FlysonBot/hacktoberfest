@@ -1,0 +1,586 @@
+{
+  "structure": "hash_linear_probing",
+  "initial": [
+    "10"
+  ],
+  "ops": [
+    {
+      "op": "insert",
+      "args": [
+        "45"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "25"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "35"
+      ]
+    },
+    {
+      "op": "search",
+      "args": [
+        "35"
+      ]
+    },
+    {
+      "op": "remove",
+      "args": [
+        "25"
+      ]
+    },
+    {
+      "op": "search",
+      "args": [
+        "35"
+      ]
+    },
+    {
+      "op": "insert",
+      "args": [
+        "55"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "highlights": [],
+      "action": "initial",
+      "detail": {
+        "size": 10,
+        "keys": []
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 45,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "placed": 5
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 25,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "placed": null,
+        "occupied_by": 45
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          null,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        6
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 25,
+        "hash": 5,
+        "probes": [
+          5,
+          6
+        ],
+        "placed": 6
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          null,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "placed": null,
+        "occupied_by": 45
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          null,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        6
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5,
+          6
+        ],
+        "placed": null,
+        "occupied_by": 25
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        7
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5,
+          6,
+          7
+        ],
+        "placed": 7
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "search",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "found": null,
+        "index": null,
+        "skipped": 45
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        6
+      ],
+      "action": "search",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5,
+          6
+        ],
+        "found": null,
+        "index": null,
+        "skipped": 25
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        7
+      ],
+      "action": "search",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5,
+          6,
+          7
+        ],
+        "found": true,
+        "index": 7
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          25,
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "remove",
+      "detail": {
+        "key": 25,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "found": null,
+        "index": null,
+        "skipped": 45
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          "DELETED",
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        6
+      ],
+      "action": "remove",
+      "detail": {
+        "key": 25,
+        "hash": 5,
+        "probes": [
+          5,
+          6
+        ],
+        "found": true,
+        "index": 6,
+        "removed": true
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          "DELETED",
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "search",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "found": null,
+        "index": null,
+        "skipped": 45
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          "DELETED",
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        6
+      ],
+      "action": "search",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5,
+          6
+        ],
+        "found": null,
+        "index": null,
+        "skipped": "deleted"
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          "DELETED",
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        7
+      ],
+      "action": "search",
+      "detail": {
+        "key": 35,
+        "hash": 5,
+        "probes": [
+          5,
+          6,
+          7
+        ],
+        "found": true,
+        "index": 7
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          "DELETED",
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        5
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 55,
+        "hash": 5,
+        "probes": [
+          5
+        ],
+        "placed": null,
+        "occupied_by": 45
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "size": 10,
+        "buckets": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          45,
+          55,
+          35,
+          null,
+          null
+        ]
+      },
+      "highlights": [
+        6
+      ],
+      "action": "insert",
+      "detail": {
+        "key": 55,
+        "hash": 5,
+        "probes": [
+          5,
+          6
+        ],
+        "placed": 6
+      },
+      "caption": ""
+    }
+  ]
+}
