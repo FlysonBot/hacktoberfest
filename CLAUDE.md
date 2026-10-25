@@ -185,7 +185,7 @@ After the animation, the student types their own ops (e.g. `push 5, pop`).
 
 | endpoint | request | response |
 |---|---|---|
-| `POST /api/plan` | `{ "text": str, "image_base64"?: str }` | `{ "structure", "initial", "ops", "source" }` or `{ "structure": null, "message" }` |
+| `POST /api/plan` | `{ "text": str, "image_base64"?: str }` | `{ "structure", "initial", "ops", "source" }` or `{ "structure": null, "message" }`; **503** `{ "detail" }` if every Gemma model is down (no cached demo answer) |
 | `POST /api/captions` | `{ "structure", "steps": [{action, detail}] }` | `{ "captions": str[] }` (same length as steps) |
 | `POST /api/explain` | `{ "structure", "step": {action, detail}, "prompt", "user_answer", "correct_answer" }` | `{ "explanation": str }` |
 
@@ -195,11 +195,14 @@ Backend rules:
 - **System prompt:** the tested `SYSTEM_PROMPT` (and `TOOL_SCHEMA`) live in `eval/eval_plan.py`. Copy them into `backend/prompts.py` rather than writing a new prompt, and keep them in sync.
 - Validate the tool call: `structure` in the enum, every op name valid for that structure, `args` non-empty where the ops table requires a value. Drop unexpected fields.
 - **Retry once on invalid output, with an error note:** resend the question with a short note listing what was wrong (e.g. "Your previous answer was invalid: wrong arg count: peek['peek']. Fix these problems."), same model order. `plan()` / `retry_note()` in `eval/eval_plan.py` show how.
-- Reject empty-string args (eval saw `["", "12"]`); treat as invalid output and retry.
-- **Faithfulness check** for `source: "user_question"`: count occurrences, not just presence — each number's count across `initial` + ops `args` must be <= its count in the user's question text (compare `collections.Counter`s); otherwise retry. (Eval: the 26b fallback turned "50, 30, 70, 20, 40" into "50, 30, 40, 20, 40"; 40 appears once in the question but twice in the output.)
+- Reject empty-string args (eval saw `["", "12"]`) and values that aren't one plain number or word (eval saw `"// empty stack"`); treat as invalid output and retry.
+- `source` must be in the enum. Empty `ops` is invalid only for `generated_example` (a typed question may just ask to show a structure).
+- **Faithfulness check** for `source: "user_question"` (skipped, with the ops order check, when a screenshot is attached: the numbers are in the image, not the text): count occurrences, not just presence — each number's count across `initial` + ops `args` must be <= its count in the user's question text (compare `collections.Counter`s); otherwise retry. (Eval: the 26b fallback turned "50, 30, 70, 20, 40" into "50, 30, 40, 20, 40"; 40 appears once in the question but twice in the output.)
 - **Arg count** per op must match the ops table: `pop`, `peek`, `dequeue`, `remove_max`, `sort` = 0 args; `push`, `enqueue`, `append`, `prepend`, `insert`, `search`, `remove` = 1; `insert_after` = 2. Wrong count = invalid, retry. (Eval: 26b returned `peek` with args `["peek"]` and `dequeue` with `["[],"]`.)
 - **Ops order check** for `source: "user_question"`: use only each op's **last** arg (the value pushed / inserted / searched); those numbers, in op order, must appear in the same order in the question text (subsequence). Last arg only, because students write "insert 8 after 30" (text order 8, 30) while the args are `["30", "8"]`; checking every arg rejected that correct plan. Ops only, not `initial`, since `initial` can legitimately be reordered (BST level order). (Eval: 26b turned "Insert 50, 30, 70, 20, 40" into 50, 30, 40, 20, 70, a different BST, and the Counter check passed it.)
-- On 503/500 from `gemma-4-31b-it`: for `user_question`, retry 31b once more after a short backoff **before** falling back to `gemma-4-26b-a4b-it`; otherwise fall back to 26b once. Always run the faithfulness check on 26b output.
+- Model order: `gemma-4-31b-it` gets **one** try (it fails ~80% with 503), then `gemma-4-26b-a4b-it` gets two. A 4xx, timeout, or network error moves straight to the next model. Always run the faithfulness check on 26b output.
+- Timeouts: 90s per plan call (30s for cached demo questions), 20s for captions/explain.
+- **Demo cache (backend):** `backend/demo_cache.py` maps the `docs/DEMO.md` question texts to `samples/plan_*.json`, served when Gemma is down or invalid twice. Keep it in sync with the demo script.
 - 503 "high demand" on 31b happened on about half the calls during the hackathon, so the cached demo responses (Demo safety) are **required, not optional**. In the latest eval run 31b failed 5 of 6 calls, so 26b is effectively the main path: **all validation above must run on 26b output**.
 - Wrap all JSON parsing in try/except. Models sometimes add text around the JSON.
 - `/api/captions` must return exactly `len(steps)` captions, or the frontend uses fallbacks.
