@@ -33,7 +33,13 @@ export function argError(op, args, n) {
 
 // ---- drawing kit -------------------------------------------------------------------------
 
-export const BOX_W = 64, BOX_H = 36, GAP = 6, FONT = 18, SMALL = 11, PILL_H = 18;
+// Base sizes (px at 1:1). Modules derive their own spacing from U so every structure scales together.
+export const BOX_W = 80, BOX_H = 48, FONT = 24, SMALL = 14, PILL_H = 22, STROKE = 2;
+export const U = BOX_H / 36; // scale vs. the original compact design (36px-tall boxes)
+export const GAP = Math.round(6 * U);
+
+// Font size for a value that must fit in a box of width w.
+export const fitFont = (v, w = BOX_W) => Math.min(FONT, Math.floor((w - 10) / (String(v).length * 0.62)));
 
 export const C = {
   text: 'var(--text,#1D1D1F)',
@@ -53,16 +59,17 @@ export const text = (x, y, s, { size = FONT, color = C.text, anchor = 'middle', 
 export const box = (x, y, value, { w = BOX_W, h = BOX_H, on = false, current = false, ghost = false } = {}) => {
   const fill = current ? C.strong : on ? C.hiFill : C.box;
   const stroke = on || current ? C.hiLine : C.line;
-  const r = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" stroke-width="1.5"${ghost ? ' stroke-dasharray="4 3"' : ''} style="fill:${fill};stroke:${stroke}"/>`;
-  const t = value === null || value === undefined ? '' : text(x + w / 2, y + h / 2, esc(value), { weight: 500 });
+  const r = `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${6 * U}" stroke-width="${current ? STROKE + 0.5 : STROKE}"${ghost ? ' stroke-dasharray="5 4"' : ''} style="fill:${fill};stroke:${stroke}"/>`;
+  const t = value === null || value === undefined ? '' : text(x + w / 2, y + h / 2, esc(value), { size: fitFont(value, w), weight: 500 });
   return ghost ? `<g opacity="0.5">${r}${t}</g>` : r + t;
 };
 
 // Small pill label centered at cx, top edge at y. Returns [svg, width].
+export const pillW = (label) => String(label).length * SMALL * 0.56 + SMALL * 1.3;
 export const pill = (cx, y, label) => {
-  const w = String(label).length * 6.2 + 14;
+  const w = pillW(label);
   return (
-    `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${PILL_H}" rx="${PILL_H / 2}" stroke-width="1" style="fill:${C.hiFill};stroke:${C.hiLine}"/>` +
+    `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="${PILL_H}" rx="${PILL_H / 2}" stroke-width="1.25" style="fill:${C.hiFill};stroke:${C.hiLine}"/>` +
     text(cx, y + PILL_H / 2, esc(label), { size: SMALL, color: C.tagText, weight: 600 })
   );
 };
@@ -71,13 +78,19 @@ export const arrowDefs = (id) =>
   `<defs><marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">` +
   `<path d="M0,0 L10,5 L0,10 z" style="fill:${C.muted}"/></marker></defs>`;
 
-export const line = (x1, y1, x2, y2, { arrow = null, color = C.muted, width = 1.25 } = {}) =>
+export const line = (x1, y1, x2, y2, { arrow = null, color = C.muted, width = 1.5 } = {}) =>
   `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${width}" style="stroke:${color}"${arrow ? ` marker-end="url(#${arrow})"` : ''}/>`;
 
-export const svg = (width, height, label, parts) =>
-  `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" ` +
-  `style="display:block;margin:0 auto;max-width:min(100%,420px);height:auto;font-family:var(--font,sans-serif)" ` +
-  `role="img" aria-label="${esc(label)}">${parts.join('')}</svg>`;
+// Displayed width: about 70% of the panel (up to its natural size if that's wider), never over 640px
+// or the panel, and never blown up past 1.25x natural (so a one-node drawing doesn't become huge).
+export const svg = (width, height, label, parts) => {
+  const w = Math.round(width);
+  return (
+    `<svg viewBox="0 0 ${w} ${Math.round(height)}" width="${w}" height="${Math.round(height)}" ` +
+    `style="display:block;margin:0 auto;width:min(100%, 640px, ${Math.round(w * 1.25)}px, max(70%, ${w}px));height:auto;font-family:var(--font,sans-serif)" ` +
+    `role="img" aria-label="${esc(label)}">${parts.join('')}</svg>`
+  );
+};
 
 // ---- linked lists (shared by singly_linked_list.js and doubly_linked_list.js) ---------------
 

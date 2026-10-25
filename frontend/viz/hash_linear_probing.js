@@ -1,7 +1,7 @@
 // Hash table with linear probing: run / render / questions (CLAUDE.md contract 4).
 // initial[0] = table size, rest = keys already in the table; hash = key % size.
 // JS decides every step and every answer; Gemma only writes captions.
-import { num, step, errorStep, argError, sortChoices, onePerStep, C, SMALL, PILL_H, esc, text, pill, svg } from './_shared.js';
+import { num, step, errorStep, argError, sortChoices, onePerStep, C, BOX_H, SMALL, PILL_H, STROKE, U, esc, fitFont, text, pill, pillW, svg } from './_shared.js';
 
 const ARGS = { insert: 1, search: 1, remove: 1 };
 export const DELETED = 'DELETED'; // tombstone: empty-after-removal
@@ -100,7 +100,8 @@ export function questions(steps) {
   return onePerStep(qs);
 }
 
-const CELL_W = 40, CELL_H = 36, GAP = 4, PAD = 8, TOP = PAD + PILL_H + 8;
+const CELL_W = 40 * U, CELL_H = BOX_H, GAP = 4 * U, PAD = 8 * U, TOP = PAD + PILL_H + 8 * U;
+const IDX = SMALL + 6 * U; // room for the index labels under the buckets
 
 export function render(container, s) {
   const { size, buckets } = s.state;
@@ -108,8 +109,8 @@ export function render(container, s) {
   const probes = new Set(d.probes || []);
   const current = s.highlights.length ? s.highlights[0] : null;
   const xOf = (i) => PAD + i * (CELL_W + GAP);
-  const width = Math.max(xOf(Math.max(size, 1)) - GAP + PAD, 200);
-  const height = TOP + CELL_H + 18 + PAD;
+  const width = Math.max(xOf(Math.max(size, 1)) - GAP + PAD, 260);
+  const height = TOP + CELL_H + IDX + PAD;
   const parts = [];
 
   if (!size) parts.push(text(width / 2, TOP + CELL_H / 2, 'no table (invalid size)', { size: SMALL + 1, color: C.muted }));
@@ -119,18 +120,18 @@ export function render(container, s) {
     const isCur = i === current, on = probes.has(i);
     const tomb = v === DELETED;
     parts.push(
-      `<rect x="${x}" y="${TOP}" width="${CELL_W}" height="${CELL_H}" rx="6" stroke-width="${isCur ? 2 : 1.5}"${tomb ? ' stroke-dasharray="3 3"' : ''} ` +
+      `<rect x="${x}" y="${TOP}" width="${CELL_W}" height="${CELL_H}" rx="${6 * U}" stroke-width="${isCur ? STROKE + 0.5 : STROKE}"${tomb ? ' stroke-dasharray="4 4"' : ''} ` +
         `style="fill:${isCur ? C.strong : on ? C.hiFill : C.box};stroke:${isCur || on ? C.hiLine : C.line}"/>`,
-      text(x + CELL_W / 2, TOP + CELL_H + 11, String(i), { size: SMALL - 1, color: C.muted })
+      text(x + CELL_W / 2, TOP + CELL_H + IDX / 2 + 2, String(i), { size: SMALL - 1, color: C.muted })
     );
     if (tomb) parts.push(text(x + CELL_W / 2, TOP + CELL_H / 2, 'del', { size: SMALL, color: C.muted }));
-    else if (v !== null) parts.push(text(x + CELL_W / 2, TOP + CELL_H / 2, esc(v), { size: String(v).length > 3 ? 13 : 18, weight: 500 }));
+    else if (v !== null) parts.push(text(x + CELL_W / 2, TOP + CELL_H / 2, esc(v), { size: fitFont(v, CELL_W), weight: 500 }));
   });
 
   // Pill above the bucket being probed, e.g. "insert 35".
   if (current !== null && d.key !== undefined) {
     const label = `${s.action} ${d.key}`;
-    const w = label.length * 6.2 + 14;
+    const w = pillW(label);
     const cx = Math.min(Math.max(xOf(current) + CELL_W / 2, PAD + w / 2), width - PAD - w / 2);
     parts.push(pill(cx, PAD, label));
   }

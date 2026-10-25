@@ -43,15 +43,15 @@ Given an empty stack numStack, what are the stack's contents after these operati
 | 0 | empty stack |
 | 1 | push 45 |
 | 2 | push 56 |
-| 3 | push 11 |
+| 3 | push 11, then the quick-check appears **before** the pop |
 | 4 | pop removes 11, top is 56 |
 
-**Practice question** (on the pop step, "Which value does Pop remove?"): **click 45 on purpose** (the wrong answer).
+**Quick-check** (predict first: on step 3, *before* the pop happens, "Which value will Pop remove?", choices 11 / 45 / 56): **click 45 on purpose** (the wrong answer).
 
 **Say:**
-> "I'll answer like someone who mixes up stacks and queues..."
+> "It asks me to predict before it shows me. I'll answer like someone who mixes up stacks and queues..."
 
-Wait for the explanation, then:
+Wait for the explanation, then click **Next** to step 4 so the pop removes 11:
 > "Gemma explains *why* I'm wrong, but the correct answer, 11, came from our JavaScript, not the model."
 
 > **If the API is slow (more than ~5s):** "We cache demo responses as a fallback, since free-tier Gemma gets busy at hackathons." Keep going with the cached version.

@@ -15,7 +15,7 @@ A student enters one of:
 
 The app returns:
 1. A **step-by-step animation** with Back / Next / Play and a caption on every step
-2. **Practice questions** inside the animation ("Which value does Pop remove?"), with an explanation when the student gets one wrong
+2. **Practice questions** inside the animation ("Which value will Pop remove?"), with an explanation when the student gets one wrong
 3. A **sandbox**: after the animation, the student types their own ops ("push 5, pop") and keeps playing (see Sandbox)
 
 Hackathon: DS3 Hacktoberfest Hack Day (UCSD), Oct 25, 2026. Targets: **Best Use of Gemma 4** and **Best Open-Source AI Project** (repo is public, MIT licensed).
@@ -172,7 +172,8 @@ export function questions(steps)        // -> [{ stepIndex, prompt, choices, ans
 ```
 
 - `questions()`: `choices` are **strings** and `answer` is the correct choice's string (e.g. `choices: ["11","45","56"], answer: "11"`). Never return a number as `answer`: `frontend/answerAdapter.js` treats a numeric answer as an index into `choices`. `eval/test_viz.mjs` checks this.
-- **Demo dependency (Viz):** the `stack` module's `questions()` must include **"Which value does Pop remove?"** on each pop step, with choices = the values pushed so far and answer = the value JS popped (demo: choices 45 / 56 / 11, answer 11). Used in `docs/DEMO.md`.
+- **Predict-first:** quick-checks are asked on the step **before** the operation they're about, so the answer isn't on screen yet (stack pop/peek, queue dequeue/peek, BST search path, hash insert bucket).
+- **Demo dependency (Viz):** the `stack` module's `questions()` must include **"Which value will Pop remove?"** on the step before each pop, with choices = the values on the stack and answer = the value JS pops (demo: choices 11 / 45 / 56 on step 3, answer 11). Used in `docs/DEMO.md`.
 
 ### 5. Sandbox
 

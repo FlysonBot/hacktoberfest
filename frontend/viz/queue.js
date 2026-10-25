@@ -1,6 +1,6 @@
 // Queue visualization: run / render / questions (CLAUDE.md contract 4).
 // JS decides every step and every answer; Gemma only writes captions.
-import { num, step, errorStep, argError, sortChoices, onePerStep, C, BOX_W, BOX_H, GAP, SMALL, PILL_H, text, box, pill, svg } from './_shared.js';
+import { num, step, errorStep, argError, sortChoices, onePerStep, C, BOX_W, BOX_H, GAP, SMALL, PILL_H, U, text, box, pill, svg } from './_shared.js';
 
 const ARGS = { enqueue: 1, dequeue: 0, peek: 0 };
 
@@ -45,6 +45,7 @@ export function run(initial, ops) {
   return steps;
 }
 
+// Predict-first: asked on the step BEFORE the dequeue/peek, while the answer isn't shown yet.
 // Choices are strings and `answer` is the correct choice's string (not an index).
 export function questions(steps) {
   const qs = [];
@@ -52,16 +53,16 @@ export function questions(steps) {
     if (i === 0 || s.detail.empty || (s.action !== 'dequeue' && s.action !== 'peek')) return;
     const choices = sortChoices([...new Set(steps[i - 1].state.items.map(String))]);
     if (choices.length < 2) return;
-    const prompt = s.action === 'dequeue' ? 'Which value does dequeue remove?' : 'Which value does peek return?';
-    qs.push({ stepIndex: i, prompt, choices, answer: String(s.detail.value) });
+    const prompt = s.action === 'dequeue' ? 'Which value will dequeue remove?' : 'Which value will peek return?';
+    qs.push({ stepIndex: i - 1, prompt, choices, answer: String(s.detail.value) });
   });
   return onePerStep(qs);
 }
 
-const PAD = 10;
+const PAD = 10 * U;
 const GHOST_X = PAD; // dequeued value, faded, to the left of the front
-const LEFT = GHOST_X + BOX_W + 24; // x of the front item
-const ROW_Y = PAD + PILL_H + 8;
+const LEFT = GHOST_X + BOX_W + 24 * U; // x of the front item
+const ROW_Y = PAD + PILL_H + 8 * U;
 
 export function render(container, s) {
   const { items, front, back } = s.state;
