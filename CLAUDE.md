@@ -5,15 +5,18 @@ If you change a contract below, update this file in the same commit and tell the
 
 ## What we're building
 
-**"zyBooks for anything you're stuck on."** zyBooks animates its own examples, but not the questions you actually have to solve. We animate any data-structure/algorithm concept **or your actual question**.
+**Pitch:** "zyBooks animates its own examples, not the questions you have to solve. We animate any question — typed or screenshotted — and let you play with it."
+
+Scope is the data structures in our actual CSE 12 zyBooks (see Topics below).
 
 A student enters one of:
-- a **concept**: "explain AVL rotations", "how does BFS work?" → Gemma picks a good example
-- a **specific question** (typed or **screenshot**): "Insert 45, 25, 35 into a size-10 table with linear probing" → Gemma extracts that exact input
+- a **concept**: "how does a queue work?", "explain separate chaining" → Gemma invents a small instructive example
+- a **specific question** (typed or **screenshot**): "Given numStack is empty: Push 45, Push 56, Push 11, Pop" → Gemma extracts that exact starting state and those exact operations
 
 The app returns:
 1. A **step-by-step animation** with Back / Next / Play and a caption on every step
-2. **Practice questions** inside the animation ("Which node does BFS visit next?"), with an explanation when the student gets one wrong
+2. **Practice questions** inside the animation ("Which value does Pop remove?"), with an explanation when the student gets one wrong
+3. A **sandbox**: after the animation, the student types their own ops ("push 5, pop") and keeps playing (see Sandbox)
 
 Hackathon: DS3 Hacktoberfest Hack Day (UCSD), Oct 25, 2026. Targets: **Best Use of Gemma 4** and **Best Open-Source AI Project** (repo is public, MIT licensed).
 **Submissions due 6:30 PM** on OrganizerHQ (the prize page says 8:00; plan for 6:30).
@@ -22,9 +25,18 @@ Hackathon: DS3 Hacktoberfest Hack Day (UCSD), Oct 25, 2026. Targets: **Best Use 
 
 **JavaScript decides every step and every correct answer. Gemma only chooses what to show and explains it.**
 
-- Gemma never computes hash values, rotations, visit orders, or answers.
+- Gemma never computes hash values, list/tree shapes, search paths, pop results, or answers.
 - If Gemma's text disagrees with the JS steps, the JS steps win.
 - This is our pitch to judges: the model handles language, code handles correctness, so the animation is never wrong.
+
+## Topics
+
+| Tier | `structure` values |
+|---|---|
+| **Tier 1** (must work for demo) | `singly_linked_list`, `doubly_linked_list`, `stack`, `queue`, `bst`, `hash_linear_probing`, `hash_chaining` |
+| **Tier 2** (if time) | `heap` (show array view + tree view side by side), `insertion_sort` |
+
+Anything unsupported → backend returns `{ "structure": null, "message": "..." }` and the UI shows a text-only explanation.
 
 ## Architecture
 
@@ -32,12 +44,13 @@ Hackathon: DS3 Hacktoberfest Hack Day (UCSD), Oct 25, 2026. Targets: **Best Use 
 Browser (frontend/)                          Python backend (backend/)            Gemini API
 ─────────────────                            ─────────────────────────            ──────────
 1. user text / screenshot ── POST /api/plan ──> Gemma + show_visualization tool ──> gemma-4
-                          <── {topic, input} ──
-2. viz/<topic>.js run(input) → steps[]   (pure JS, no network)
+                          <── {structure, initial, ops, source} ──
+2. viz/<structure>.js run(initial, ops) → steps[]   (pure JS, no network)
 3. steps ──────────────────── POST /api/captions ──> Gemma writes 1 caption per step
                           <── {captions[]} ──
-4. viz/<topic>.js questions(steps) → [{prompt, choices, answer}]   (JS decides answers)
+4. viz/<structure>.js questions(steps) → [{prompt, choices, answer}]   (JS decides answers)
 5. wrong answer ───────────── POST /api/explain ──> Gemma explains using the correct answer JS gave
+6. sandbox ops (typed by student) → run(initial, [...ops, ...sandboxOps]) → /api/captions for new steps only
 ```
 
 - **The API key never goes to the browser.** All Gemma calls go through the backend.
@@ -47,50 +60,97 @@ Browser (frontend/)                          Python backend (backend/)          
 
 ### 1. Tool call: `show_visualization`
 
-Gemma must call this tool; it does not answer in free text.
+Gemma must call this tool; it does not answer in free text. **Every field is fully typed** (no untyped objects).
 
 ```json
 {
   "name": "show_visualization",
-  "description": "Choose which algorithm visualization to show and the example input.",
+  "description": "Choose which data-structure visualization to show, its starting contents, and the operations to animate.",
   "parameters": {
     "type": "object",
     "properties": {
-      "topic": {
+      "structure": {
         "type": "string",
-        "enum": ["hash_linear_probing", "hash_chaining", "bst_insert", "avl_insert", "bfs", "dfs"]
+        "enum": ["singly_linked_list", "doubly_linked_list", "stack", "queue", "bst",
+                 "hash_linear_probing", "hash_chaining", "heap", "insertion_sort"]
       },
-      "input": { "type": "object", "description": "Topic-specific input, see table" },
+      "initial": {
+        "type": "array", "items": { "type": "string" },
+        "description": "Starting contents, as strings ([] if empty). JS parses numbers."
+      },
+      "ops": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "op":   { "type": "string", "enum": ["append", "prepend", "insert_after", "remove", "search",
+                                                 "push", "pop", "peek", "enqueue", "dequeue",
+                                                 "insert", "remove_max", "sort"] },
+            "args": { "type": "array", "items": { "type": "string" } }
+          },
+          "required": ["op", "args"]
+        }
+      },
       "source": { "type": "string", "enum": ["user_question", "generated_example"] }
     },
-    "required": ["topic", "input", "source"]
+    "required": ["structure", "initial", "ops", "source"]
   }
 }
 ```
 
-| topic | `input` shape | example |
+The `op` enum is the union of all ops; the backend checks the op is valid **for that structure**:
+
+| structure | `initial` | valid ops (`args`) |
 |---|---|---|
-| `hash_linear_probing` | `{ "size": int, "keys": int[] }` (hash = key % size) | `{ "size": 10, "keys": [45, 25, 35] }` |
-| `hash_chaining` | `{ "size": int, "keys": int[] }` | `{ "size": 7, "keys": [10, 17, 3] }` |
-| `bst_insert` | `{ "values": int[] }` | `{ "values": [50, 30, 70, 20] }` |
-| `avl_insert` | `{ "values": int[] }` | `{ "values": [10, 20, 30, 25] }` |
-| `bfs` / `dfs` | `{ "nodes": str[], "edges": [str, str][], "start": str, "directed": bool }` | `{ "nodes": ["A","B","C"], "edges": [["A","B"],["A","C"]], "start": "A", "directed": false }` |
+| `singly_linked_list` / `doubly_linked_list` | values head → tail | `append [v]`, `prepend [v]`, `insert_after [existing, new]`, `remove [v]`, `search [v]` |
+| `stack` | values bottom → top | `push [v]`, `pop []`, `peek []` |
+| `queue` | values front → back | `enqueue [v]`, `dequeue []`, `peek []` |
+| `bst` | values in **level order** (inserting in that order rebuilds the tree) | `insert [v]`, `search [v]`, `remove [v]` |
+| `hash_linear_probing` / `hash_chaining` | `initial[0]` = table size, rest = keys already in the table; hash = key % size | `insert [k]`, `search [k]`, `remove [k]` |
+| `heap` (max-heap) | array order | `insert [v]`, `remove_max []` |
+| `insertion_sort` | the array to sort | `sort []` |
 
-Start with **`hash_linear_probing` and `bst_insert`** working end to end. Add others only after the demo path works.
-If a request doesn't fit any topic, the backend returns `{ "topic": null, "message": "..." }` and the UI shows a text-only explanation.
+Examples from real zyBooks questions:
 
-### 2. Step format (output of `viz/<topic>.js` `run(input)`)
+| question | tool call |
+|---|---|
+| Doubly linked list 12 ⇄ 30; ListInsertAfter(30, 8), (12, 45), (45, 76) | `structure: "doubly_linked_list", initial: ["12","30"], ops: [{"op":"insert_after","args":["30","8"]}, {"op":"insert_after","args":["12","45"]}, {"op":"insert_after","args":["45","76"]}]` |
+| Empty stack; Push 45, Push 56, Push 11, Pop | `structure: "stack", initial: [], ops: [{"op":"push","args":["45"]}, {"op":"push","args":["56"]}, {"op":"push","args":["11"]}, {"op":"pop","args":[]}]` |
+| Search for 65 in the BST shown | `structure: "bst", initial: ["21","12","91","11","19","65","96"], ops: [{"op":"search","args":["65"]}]` |
+
+All examples above use `source: "user_question"`.
+
+> **Eval findings:** with the old schema's untyped `input: {"type": "object"}`, Gemma returned `input: {}` on every call. Typed fields (as above) are required. The eval also saw frequent 503 "high demand" / 500 errors from `gemma-4-31b-it`.
+
+### 2. Question-reading rules (for the Gemma `/api/plan` prompt)
+
+- Copy exact values and operations from the question; set `source: "user_question"`.
+- `initial` holds only what already exists before the question's operations; the operations the question asks for go in `ops` (e.g. "insert 50, 30, 70 into a BST" → `initial: []`, three `insert` ops).
+- Concept-only requests: invent a small instructive example (4–6 items); `source: "generated_example"`.
+- BST shown in an image: list values in **level order** in `initial` (inserting in that order rebuilds the same tree).
+- Maps: inserting an existing key overwrites it (don't add a new entry).
+- Gemma never computes results or answers.
+
+### 3. Step format (output of `viz/<structure>.js` `run(initial, ops)`)
 
 ```json
 {
-  "topic": "hash_linear_probing",
-  "input": { "size": 10, "keys": [45, 25, 35] },
+  "structure": "doubly_linked_list",
+  "initial": ["12", "30"],
+  "ops": [{ "op": "insert_after", "args": ["30", "8"] }],
   "steps": [
     {
-      "state": { "buckets": [null, null, null, null, null, 45, null, null, null, null] },
-      "highlights": [5],
-      "action": "insert",
-      "detail": { "key": 45, "hash": 5, "probes": [5], "placed": 5 },
+      "state": { "nodes": [12, 30], "head": 0, "tail": 1 },
+      "highlights": [],
+      "action": "initial",
+      "detail": { "values": [12, 30] },
+      "caption": ""
+    },
+    {
+      "state": { "nodes": [12, 30, 8], "head": 0, "tail": 2 },
+      "highlights": [1, 2],
+      "action": "insert_after",
+      "detail": { "after": 30, "value": 8, "index": 2, "new_tail": true },
       "caption": ""
     }
   ]
@@ -98,38 +158,54 @@ If a request doesn't fit any topic, the backend returns `{ "topic": null, "messa
 ```
 
 - `state`: a full snapshot (not a diff), so Back/Next is just indexing.
-- `highlights`: bucket indices or node ids to color.
+- `highlights`: indices / node ids / bucket indices to color.
+- `action`: the op name, or `"initial"` for the starting-state step.
 - `detail`: the facts Gemma uses to write the caption. Gemma must only restate these.
 - `caption`: empty from JS; filled in from `/api/captions`. If captions fail, show a fallback built from `detail`.
 
-### 3. Viz module interface (`frontend/viz/<topic>.js`)
+### 4. Viz module interface (`frontend/viz/<structure>.js`)
 
 ```js
-export function run(input)              // -> steps[] (format above)
+export function run(initial, ops)       // -> steps[] (format above); initial: string[], ops: [{op, args: string[]}]
 export function render(container, step) // draws one step (SVG or canvas)
 export function questions(steps)        // -> [{ stepIndex, prompt, choices, answer }]  (JS decides answer)
 ```
 
-### 4. Backend endpoints (`backend/main.py`)
+### 5. Sandbox
+
+After the animation, the student types their own ops (e.g. `push 5, pop`).
+- JS parses the text into `[{op, args}]` (no Gemma) and validates against the ops table; invalid ops show an inline error.
+- The player calls the same `run(initial, [...ops, ...sandboxOps])` + `render()` and jumps to the first new step.
+- Gemma is used **only** for captions of the new steps (`/api/captions`); fallback captions from `detail` if it fails.
+
+### 6. Backend endpoints (`backend/main.py`)
 
 | endpoint | request | response |
 |---|---|---|
-| `POST /api/plan` | `{ "text": str, "image_base64"?: str }` | `{ "topic", "input", "source" }` or `{ "topic": null, "message" }` |
-| `POST /api/captions` | `{ "topic", "steps": [{action, detail}] }` | `{ "captions": str[] }` (same length as steps) |
-| `POST /api/explain` | `{ "topic", "step": {action, detail}, "prompt", "user_answer", "correct_answer" }` | `{ "explanation": str }` |
+| `POST /api/plan` | `{ "text": str, "image_base64"?: str }` | `{ "structure", "initial", "ops", "source" }` or `{ "structure": null, "message" }` |
+| `POST /api/captions` | `{ "structure", "steps": [{action, detail}] }` | `{ "captions": str[] }` (same length as steps) |
+| `POST /api/explain` | `{ "structure", "step": {action, detail}, "prompt", "user_answer", "correct_answer" }` | `{ "explanation": str }` |
 
 Backend rules:
-- Validate the tool call against the enum and input shape before returning; retry once if invalid.
+- Validate the tool call: `structure` in the enum, every op name valid for that structure, `args` non-empty where the ops table requires a value. Drop unexpected fields. Retry once on invalid output.
+- On 503/500 from `gemma-4-31b-it`, retry once on `gemma-4-26b-a4b-it`.
 - Wrap all JSON parsing in try/except. Models sometimes add text around the JSON.
 - `/api/captions` must return exactly `len(steps)` captions, or the frontend uses fallbacks.
+- Create the client once at module level (`client = genai.Client()`); never chain `genai.Client().models...` inline (it closes the connection before the request).
+
+### 7. Demo safety
+
+- For the 3–4 demo questions, the frontend falls back to cached responses in `samples/` (plan + captions) if the API fails, so the demo never depends on Gemini being up.
+- The **Eval + demo** lead owns those cached files and keeps them in sync with the demo script.
 
 ## Gemma / API setup
 
 - SDK: `google-genai` (Python). Key comes from env var **`GEMINI_API_KEY`**. Never hardcode it or commit `.env`.
-- Models on the Gemini API: `gemma-4-31b-it` (stronger: use for `/api/plan`, especially screenshots) and `gemma-4-26b-a4b-it` (faster: captions/explain).
+- Models on the Gemini API: `gemma-4-31b-it` (stronger: use for `/api/plan`, especially screenshots) and `gemma-4-26b-a4b-it` (faster: captions/explain, and fallback for `/api/plan` on 503/500).
 - **No audio**: E2B/E4B are not on the Gemini API. Image input works.
-- Thinking: `thinking_config=types.ThinkingConfig(thinking_level="high")` for `/api/plan`; `"minimal"` for captions if speed matters.
+- Thinking: `thinking_level="minimal"` for captions/explain; `"high"` only for `/api/plan` if latency allows.
 - Free tier is about 15 requests/min per key. **Everyone uses their own key** while testing.
+- **`CERTIFICATE_VERIFY_FAILED`** (Avast HTTPS scanning): `pip install truststore`, and put `import truststore; truststore.inject_into_ssl()` before importing `google.genai`.
 
 ## Repo layout
 
@@ -138,13 +214,15 @@ backend/
   main.py           FastAPI app + static serving of frontend/
   gemma.py          all Gemini API calls
   prompts.py        system prompts + tool declaration
-  requirements.txt  google-genai, fastapi, uvicorn
+  requirements.txt  google-genai, fastapi, uvicorn, truststore
 frontend/
   index.html
   app.js            input box, calls /api/*, wires player
-  player.js         Back / Next / Play, step index, practice question UI
-  viz/              one module per topic (run / render / questions)
-samples/            plan_*.json and steps_*.json so everyone can build before integration
+  player.js         Back / Next / Play, step index, practice question UI, sandbox input
+  viz/              one module per structure (run / render / questions)
+samples/            plan_*.json and steps_*.json for building before integration + cached demo responses
+eval/
+  eval_plan.py      sends test questions to Gemma, checks structure / source / initial / ops
 CLAUDE.md
 README.md
 LICENSE
@@ -164,10 +242,10 @@ uvicorn backend.main:app --reload
 
 | Role | Owner | Owns |
 |---|---|---|
-| Frontend | _name_ | `index.html`, `app.js`, `player.js`: input, step player, practice question UI |
-| Visualizations (JS) | _name_ | `frontend/viz/*`: run / render / questions per topic |
+| Frontend | _name_ | `index.html`, `app.js`, `player.js`: input, step player, practice question UI, sandbox input |
+| Visualizations (JS) | _name_ | `frontend/viz/*`: run / render / questions per structure |
 | Backend + Gemma | _name_ | `backend/*`: endpoints, prompts, tool call, captions, explain |
-| Eval + demo | _name_ | `samples/`, test questions, checks Gemma picks the right topic, demo script, README, submission |
+| Eval + demo | _name_ | `samples/` (incl. cached demo responses), `eval/`, test questions, demo script, README, submission |
 
 ## Git workflow
 
@@ -181,7 +259,7 @@ uvicorn backend.main:app --reload
 | Time | Goal |
 |---|---|
 | 1:00–1:30 | Contracts agreed (this file), sample JSON in `samples/` |
-| 1:30–3:30 | Everyone builds against samples: hash_linear_probing + bst_insert in JS, `/api/plan` working, player UI |
+| 1:30–3:30 | Everyone builds against samples: Tier 1 structures in JS, `/api/plan` working, player UI |
 | 3:30–4:30 | **Integration: one full path working end to end** (text in → animation + captions + 1 practice question) |
 | 4:30–5:45 | Screenshot input, more topics, polish, error states |
 | 5:45–6:15 | Freeze features. README, demo video, final test |
