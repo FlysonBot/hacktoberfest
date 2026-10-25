@@ -4,7 +4,9 @@ Sends each test question to gemma-4-31b-it with the show_visualization tool (CLA
 and prints PASS/FAIL per case, the extracted tool call, and a final score.
 
 Run from the repo root:
-    python eval/eval_plan.py
+    uv run python eval/eval_plan.py                                   # 31b -> 26b fallback, high thinking
+    uv run python eval/eval_plan.py --model gemma-4-26b-a4b-it --thinking minimal
+    uv run python eval/eval_plan.py --compare                         # A: 26b minimal vs B: 31b high
 Needs GEMINI_API_KEY in the environment.
 """
 
@@ -160,27 +162,38 @@ CASES = [
 
 client = genai.Client()
 
-config = types.GenerateContentConfig(
-    system_instruction=SYSTEM_PROMPT,
-    tools=[types.Tool(function_declarations=[SHOW_VISUALIZATION])],
-    tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="ANY")),
-    thinking_config=types.ThinkingConfig(thinking_level="high"),
-)
+
+def make_config(thinking_level):
+    return types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        tools=[types.Tool(function_declarations=[SHOW_VISUALIZATION])],
+        tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="ANY")),
+        thinking_config=types.ThinkingConfig(thinking_level=thinking_level),
+    )
+
+
+# Set by run_suite(): which models to try (in order, on 500/503), the config, and per-run stats.
+attempts_order = ATTEMPTS
+config = make_config("high")
+stats = {"latencies": [], "server_errors": 0}
 
 
 def plan(question, note=None):
     """Returns (model_used, show_visualization args dict), or raises with a reason.
     `note` (from retry_note) is appended to the question on a retry."""
     contents = question if note is None else f"{question}\n\n{note}"
-    for attempt, model in enumerate(ATTEMPTS):
+    for attempt, model in enumerate(attempts_order):
+        t = time.time()
         try:
             response = client.models.generate_content(model=model, contents=contents, config=config)
+            stats["latencies"].append(time.time() - t)
             break
         except genai_errors.ServerError as e:  # 500/503 "high demand"
-            if attempt == len(ATTEMPTS) - 1:
+            stats["server_errors"] += 1
+            if attempt == len(attempts_order) - 1:
                 raise
             wait = SLEEP_SECONDS * (attempt + 1)
-            print(f"  {e.code} from {model}; trying {ATTEMPTS[attempt + 1]} in {wait}s", flush=True)
+            print(f"  {e.code} from {model} after {time.time() - t:.1f}s; trying {attempts_order[attempt + 1]} in {wait}s", flush=True)
             time.sleep(wait)
     for call in response.function_calls or []:
         if call.name == "show_visualization":
@@ -247,6 +260,25 @@ def validate(question, args):
                     if op in ARG_COUNT and len(op_args) != ARG_COUNT[op]]
     if wrong_counts:
         problems.append(f"wrong arg count: {wrong_counts}")
+
+    # A specific question always has something to show: starting contents or operations.
+    if source == "user_question" and not got_initial and not got_ops:
+        problems.append("empty plan: a specific question needs starting contents or operations")
+
+    # insert_after's first arg must already be in the list at that point (catches swapped args
+    # like insert_after ["45", "12"] when 45 hasn't been inserted yet).
+    if structure in ("singly_linked_list", "doubly_linked_list"):
+        current = list(got_initial)
+        for op, op_args in got_ops:
+            if op in ("append", "prepend") and op_args:
+                current.append(op_args[0])
+            elif op == "insert_after" and len(op_args) == 2:
+                if op_args[0] not in current:
+                    problems.append(f"insert_after {list(op_args)}: node {op_args[0]} isn't in the list at that point "
+                                    f"(args are [existing node, new value])")
+                current.append(op_args[1])
+            elif op == "remove" and op_args and op_args[0] in current:
+                current.remove(op_args[0])
     return problems
 
 
@@ -302,26 +334,66 @@ def attempt(question, expected, note=None):
     return validation, mismatch
 
 
-first_try = after_retry = 0
-for i, (question, *expected) in enumerate(CASES, 1):
-    if i > 1:
+def run_suite(label, models, thinking_level):
+    """Runs every case (retrying once with the error note on the same model order). Returns a stats dict."""
+    global attempts_order, config, stats
+    attempts_order, config = models, make_config(thinking_level)
+    stats = {"latencies": [], "server_errors": 0}
+    print(f"===== {label}: models={models} thinking={thinking_level} =====", flush=True)
+    first_try = after_retry = 0
+    for i, (question, *expected) in enumerate(CASES, 1):
+        if i > 1:
+            time.sleep(SLEEP_SECONDS)
+        print(f"[{i}/{len(CASES)}] {question.splitlines()[0]}", flush=True)
+        result = attempt(question, expected)
+        if result is not None and not result[0] + result[1]:
+            first_try += 1
+            after_retry += 1
+            print("  PASS (first try)\n", flush=True)
+            continue
+
         time.sleep(SLEEP_SECONDS)
-    print(f"[{i}/{len(CASES)}] {question.splitlines()[0]}", flush=True)
-    result = attempt(question, expected)
-    if result is not None and not result[0] + result[1]:
-        first_try += 1
-        after_retry += 1
-        print("  PASS (first try)\n", flush=True)
-        continue
+        note = retry_note(result[0]) if result else None  # API error: plain retry, nothing to correct
+        print(f"  retrying{' with error note' if note else ''}", flush=True)
+        retry = attempt(question, expected, note)
+        ok = retry is not None and not retry[0] + retry[1]
+        after_retry += ok
+        print(f"  {'PASS (after retry)' if ok else 'FAIL (after retry)'}\n", flush=True)
 
-    time.sleep(SLEEP_SECONDS)
-    note = retry_note(result[0]) if result else None  # API error: plain retry, nothing to correct
-    print(f"  retrying{' with error note' if note else ''}", flush=True)
-    retry = attempt(question, expected, note)
-    ok = retry is not None and not retry[0] + retry[1]
-    after_retry += ok
-    print(f"  {'PASS (after retry)' if ok else 'FAIL (after retry)'}\n", flush=True)
+    n = len(CASES)
+    lat = sorted(stats["latencies"])
+    result = {
+        "label": label, "n": n, "first_try": first_try, "after_retry": after_retry,
+        "median": lat[len(lat) // 2] if lat else float("nan"), "max": lat[-1] if lat else float("nan"),
+        "server_errors": stats["server_errors"],
+    }
+    print(f"First-try accuracy:   {first_try}/{n} ({100 * first_try / n:.0f}%)", flush=True)
+    print(f"After-retry accuracy: {after_retry}/{n} ({100 * after_retry / n:.0f}%)", flush=True)
+    print(f"Latency (successful calls): median {result['median']:.1f}s, max {result['max']:.1f}s; 500/503 errors: {stats['server_errors']}\n", flush=True)
+    return result
 
-n = len(CASES)
-print(f"First-try accuracy:   {first_try}/{n} ({100 * first_try / n:.0f}%)", flush=True)
-print(f"After-retry accuracy: {after_retry}/{n} ({100 * after_retry / n:.0f}%)", flush=True)
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--model", help="test only this model (500/503 retries stay on it)")
+    parser.add_argument("--thinking", default="high", help="thinking level: minimal | low | medium | high")
+    parser.add_argument("--compare", action="store_true", help="compare A: 26b minimal vs B: 31b high")
+    opts = parser.parse_args()
+
+    if opts.compare:
+        rows = [
+            run_suite("A", [FALLBACK_MODEL] * 3, "minimal"),
+            run_suite("B", [PLAN_MODEL] * 3, "high"),
+        ]
+        print("| setup | first try | after retry | median latency | max latency | 500/503 |")
+        print("|---|---|---|---|---|---|")
+        names = {"A": f"A: {FALLBACK_MODEL}, minimal", "B": f"B: {PLAN_MODEL}, high"}
+        for r in rows:
+            print(f"| {names[r['label']]} | {r['first_try']}/{r['n']} | {r['after_retry']}/{r['n']} | "
+                  f"{r['median']:.1f}s | {r['max']:.1f}s | {r['server_errors']} |")
+    elif opts.model:
+        run_suite(opts.model, [opts.model] * 3, opts.thinking)
+    else:
+        run_suite("default", ATTEMPTS, opts.thinking)
