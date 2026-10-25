@@ -349,7 +349,7 @@ button {
 .screenshot-row-content {
   min-height: 0;
   overflow: hidden;
-  margin: 0 14px 12px;
+  margin: 10px 14px 12px;
   padding: 10px 4px 10px 10px;
   display: flex;
   align-items: center;
