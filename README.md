@@ -52,7 +52,7 @@ So the backend validates **every** plan before the browser sees it and retries o
 - **number faithfulness:** no number appears more often than it does in the question
 - **order:** the numbers in the ops appear in the same order as in the question
 
-It falls back to 26b when 31b is overloaded, and the demo questions have cached responses.
+It falls back to 26b when 31b is overloaded.
 
 **Eval results:** _[first-try X/6, after retry Y/6, placeholder]_
 
@@ -92,7 +92,7 @@ uv run python eval/eval_plan.py     # live eval of Gemma's plans (needs GEMINI_A
 ```
 backend/    FastAPI app, Gemma calls, prompts, plan validation
 frontend/   index.html + app; viz/<structure>.js = run / render / questions per structure
-samples/    example plans + steps (also used as cached demo responses)
+samples/    example plans + steps for the demo questions
 eval/       Gemma plan eval + JS visualization tests
 docs/       requirements and demo script
 ```
