@@ -3,6 +3,8 @@ from typing import Any
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from backend.plan import make_plan
+
 app = FastAPI()
 
 
@@ -24,20 +26,19 @@ class ExplainRequest(BaseModel):
     correct_answer: str
 
 
-# Echo stubs: print what arrives so we can see the real inputs before wiring up Gemma.
-@app.post("/api/plan")
+# /api/plan is real; captions and explain are still echo stubs.
+@app.post('/api/plan')
 def plan(req: PlanRequest):
-    print("PLAN in:", req.text, "| image:", bool(req.image_base64), flush=True)
-    return {"received": req.model_dump()}
+    return make_plan(req.text, req.image_base64)
 
 
-@app.post("/api/captions")
+@app.post('/api/captions')
 def captions(req: CaptionsRequest):
-    print("CAPTIONS in:", req.structure, len(req.steps), "steps", flush=True)
-    return {"received_steps": len(req.steps)}
+    print('CAPTIONS in:', req.structure, len(req.steps), 'steps', flush=True)
+    return {'received_steps': len(req.steps)}
 
 
-@app.post("/api/explain")
+@app.post('/api/explain')
 def explain(req: ExplainRequest):
-    print("EXPLAIN in:", req.model_dump(), flush=True)
-    return {"received": req.model_dump()}
+    print('EXPLAIN in:', req.model_dump(), flush=True)
+    return {'received': req.model_dump()}

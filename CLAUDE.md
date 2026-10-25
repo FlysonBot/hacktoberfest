@@ -227,6 +227,7 @@ frontend/
 samples/            plan_*.json and steps_*.json for building before integration + cached demo responses
 eval/
   eval_plan.py      sends test questions to Gemma, checks structure / source / initial / ops
+tests/              offline pytest tests (no API calls): `uv run pytest`
 CLAUDE.md
 README.md
 LICENSE
