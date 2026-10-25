@@ -754,13 +754,6 @@ button {
   transition: opacity var(--dur-fast) var(--ease);
 }
 
-.caption-detail {
-  margin: 6px 0 0;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text-2);
-}
-
 .captions-loading-chip {
   align-self: flex-start;
   height: 26px;

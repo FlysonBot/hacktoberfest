@@ -1,7 +1,7 @@
 import { postPlan, postCaptions, postExplain, ApiError } from './api.js';
 import { Player, isAtEnd } from './player.js';
 import { isCorrectChoice, getCorrectChoiceText, describeChoice } from './answerAdapter.js';
-import { fallbackCaption, formatActionTitle, formatDetailLine } from './captions.js';
+import { fallbackCaption, formatActionTitle } from './captions.js';
 import { parseSandboxOps } from './sandbox.js';
 
 // Tier 1 + Tier 2 structures from CLAUDE.md's show_visualization enum. A
@@ -64,7 +64,6 @@ const els = {
   stepBadge: document.getElementById('step-badge'),
   stepTag: document.getElementById('step-tag'),
   captionText: document.getElementById('caption-text'),
-  captionDetail: document.getElementById('caption-detail'),
 
   progressRow: document.getElementById('progress-row'),
   btnBack: document.getElementById('btn-back'),
@@ -108,6 +107,7 @@ const els = {
   devJsonExample: document.getElementById('dev-json-example'),
   devJsonLoad: document.getElementById('dev-json-load'),
   devJsonError: document.getElementById('dev-json-error'),
+  devStepDetail: document.getElementById('dev-step-detail'),
 };
 
 const state = {
@@ -525,16 +525,18 @@ function updateCaption(step) {
     els.stepBadge.textContent = '';
     els.stepTag.textContent = '';
     els.captionText.textContent = 'Generate a lesson to see it animated here.';
-    els.captionDetail.textContent = '';
     els.captionsLoadingChip.hidden = true;
+    els.devStepDetail.textContent = '—';
     return;
   }
   const hasRealCaption = typeof step.caption === 'string' && step.caption.trim().length > 0;
   els.stepBadge.textContent = String(player.index + 1);
   els.stepTag.textContent = formatActionTitle(step.action);
   els.captionText.textContent = hasRealCaption ? step.caption : fallbackCaption(step);
-  els.captionDetail.textContent = hasRealCaption ? formatDetailLine(step.detail) : '';
   els.captionsLoadingChip.hidden = state.captionsSettled;
+  // Raw detail facts are debug info for teammates, not shown to students —
+  // kept in Developer tools instead of under the caption.
+  els.devStepDetail.textContent = JSON.stringify({ action: step.action, detail: step.detail }, null, 2);
 }
 
 function onRestartClick() {
