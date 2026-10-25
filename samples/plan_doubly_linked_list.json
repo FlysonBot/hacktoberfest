@@ -1,0 +1,10 @@
+{
+  "structure": "doubly_linked_list",
+  "initial": ["12", "30"],
+  "ops": [
+    { "op": "insert_after", "args": ["30", "8"] },
+    { "op": "insert_after", "args": ["12", "45"] },
+    { "op": "insert_after", "args": ["45", "76"] }
+  ],
+  "source": "user_question"
+}

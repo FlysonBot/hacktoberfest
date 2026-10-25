@@ -1,0 +1,11 @@
+{
+  "structure": "stack",
+  "initial": [],
+  "ops": [
+    { "op": "push", "args": ["45"] },
+    { "op": "push", "args": ["56"] },
+    { "op": "push", "args": ["11"] },
+    { "op": "pop", "args": [] }
+  ],
+  "source": "user_question"
+}

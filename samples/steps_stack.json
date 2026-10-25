@@ -1,0 +1,47 @@
+{
+  "structure": "stack",
+  "initial": [],
+  "ops": [
+    { "op": "push", "args": ["45"] },
+    { "op": "push", "args": ["56"] },
+    { "op": "push", "args": ["11"] },
+    { "op": "pop", "args": [] }
+  ],
+  "steps": [
+    {
+      "state": { "items": [], "top": null },
+      "highlights": [],
+      "action": "initial",
+      "detail": { "values": [] },
+      "caption": ""
+    },
+    {
+      "state": { "items": [45], "top": 0 },
+      "highlights": [0],
+      "action": "push",
+      "detail": { "value": 45, "size": 1 },
+      "caption": ""
+    },
+    {
+      "state": { "items": [45, 56], "top": 1 },
+      "highlights": [1],
+      "action": "push",
+      "detail": { "value": 56, "size": 2 },
+      "caption": ""
+    },
+    {
+      "state": { "items": [45, 56, 11], "top": 2 },
+      "highlights": [2],
+      "action": "push",
+      "detail": { "value": 11, "size": 3 },
+      "caption": ""
+    },
+    {
+      "state": { "items": [45, 56], "top": 1 },
+      "highlights": [1],
+      "action": "pop",
+      "detail": { "value": 11, "size": 2, "new_top": 56 },
+      "caption": ""
+    }
+  ]
+}
