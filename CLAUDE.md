@@ -290,5 +290,5 @@ uv run uvicorn backend.main:app --reload
 
 - Goal: animate any DS/algorithm concept or the student's own question; JS computes steps/answers, Gemma only picks and explains.
 - Deadline: submit by 6:30 PM (prize page says 8:00; plan for 6:30).
-- Tooling is uv. Layout is settled: root-level `backend/`, `frontend/`, `samples/` (no `src/`). `backend/gemma.py` has the retry/fallback Gemma helper; the rest is still to build.
+- Tooling is uv. Layout is settled: root-level `backend/`, `frontend/`, `samples/` (no `src/`). Backend is done: `/api/plan`, `/api/captions`, `/api/explain` work against real Gemma, and FastAPI serves `frontend/` at `/`.
 - Full requirements: docs/REQUIREMENTS.md

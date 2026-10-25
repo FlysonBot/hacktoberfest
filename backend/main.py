@@ -1,9 +1,14 @@
+from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from backend.captions import make_captions, make_explanation
 from backend.plan import make_plan
+
+FRONTEND = Path(__file__).parent.parent / 'frontend'
 
 app = FastAPI()
 
@@ -26,19 +31,27 @@ class ExplainRequest(BaseModel):
     correct_answer: str
 
 
-# /api/plan is real; captions and explain are still echo stubs.
 @app.post('/api/plan')
 def plan(req: PlanRequest):
     return make_plan(req.text, req.image_base64)
 
 
+# On failure, captions/explain return 502; the frontend then shows its own fallback text.
 @app.post('/api/captions')
 def captions(req: CaptionsRequest):
-    print('CAPTIONS in:', req.structure, len(req.steps), 'steps', flush=True)
-    return {'received_steps': len(req.steps)}
+    result = make_captions(req.structure, req.steps)
+    if result is None:
+        raise HTTPException(502, 'Gemma captions failed')
+    return {'captions': result}
 
 
 @app.post('/api/explain')
 def explain(req: ExplainRequest):
-    print('EXPLAIN in:', req.model_dump(), flush=True)
-    return {'received': req.model_dump()}
+    result = make_explanation(req.structure, req.step, req.prompt, req.user_answer, req.correct_answer)
+    if result is None:
+        raise HTTPException(502, 'Gemma explanation failed')
+    return {'explanation': result}
+
+
+# Mounted last so /api/* routes win; serves frontend/index.html at /.
+app.mount('/', StaticFiles(directory=FRONTEND, html=True), name='frontend')

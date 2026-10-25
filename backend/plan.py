@@ -14,7 +14,7 @@ config = types.GenerateContentConfig(
     tool_config=types.ToolConfig(
         function_calling_config=types.FunctionCallingConfig(mode='ANY')
     ),
-    thinking_config=types.ThinkingConfig(thinking_level='minimal'),
+    thinking_config=types.ThinkingConfig(thinking_level='high'),  # what eval/eval_plan.py tested
 )
 
 
@@ -40,6 +40,9 @@ def validate(text: str, args: dict) -> list[str]:
             problems.append('empty arg')
     if '' in initial:
         problems.append('empty value in initial')
+    if structure in ('hash_linear_probing', 'hash_chaining'):  # JS computes key % initial[0]
+        if not initial or not initial[0].isdigit() or int(initial[0]) <= 0:
+            problems.append(f'initial[0] must be a positive integer table size, got {initial[:1]}')
     if (
         args.get('source') == 'user_question'
     ):  # faithfulness: no number may appear more than in the text
@@ -59,10 +62,22 @@ def validate(text: str, args: dict) -> list[str]:
     return problems
 
 
+def retry_note(problems: list[str]) -> str:
+    """Tells Gemma what was wrong with its last answer (same wording as eval/eval_plan.py)."""
+    if not problems:
+        return ('Your previous show_visualization call did not match the question. Re-read the question and '
+                'copy its data structure, starting contents, and operations exactly.')
+    lines = '\n'.join(f'- {p}' for p in problems)
+    return f'Your previous show_visualization call was invalid:\n{lines}\nCall show_visualization again and fix these problems.'
+
+
 def make_plan(text: str, image_base64: str | None = None) -> dict:
-    for _ in range(2):  # retry once on invalid output
-        args = gemma.call_tool(text, config, image_base64)
-        if args is not None and not validate(text, args):
+    note = None
+    for _ in range(2):  # retry once on invalid output, telling Gemma what was wrong
+        args = gemma.call_tool(text if note is None else f'{text}\n\n{note}', config, image_base64)
+        problems = validate(text, args) if args is not None else []
+        note = retry_note(problems)
+        if args is not None and not problems:
             return {
                 'structure': args['structure'],
                 'initial': [str(v).strip() for v in args.get('initial') or []],

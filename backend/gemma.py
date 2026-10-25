@@ -7,20 +7,25 @@ from google.genai import errors, types
 client = genai.Client()  # reads GEMINI_API_KEY
 
 MODELS = ['gemma-4-31b-it', 'gemma-4-26b-a4b-it']  # strongest first, fast fallback
+FAST_FIRST = ['gemma-4-26b-a4b-it', 'gemma-4-31b-it']  # captions/explain: speed over strength
 RETRIES = 2
 
 
-def generate(contents: str) -> str:
-    for model in MODELS:
+def generate(contents: str, config, models: list[str] = FAST_FIRST) -> str | None:
+    """Plain-text Gemma call (captions/explain). Returns the reply text, or None if every model failed."""
+    for model in models:
         for attempt in range(RETRIES):
             try:
                 return client.models.generate_content(
-                    model=model, contents=contents
+                    model=model, contents=contents, config=config
                 ).text
             except errors.ServerError as e:  # intermittent 5xx from the API
                 print(f'{model} attempt {attempt + 1} failed: {e.code}')
                 time.sleep(2**attempt)
-    raise RuntimeError('All Gemma models failed')
+            except errors.ClientError as e:  # 4xx, e.g. 429 rate limit: retrying won't help, give up
+                print(f'{model} failed: {e.code} {e.message}')
+                return None
+    return None
 
 
 def call_tool(text: str, config, image_base64: str | None = None) -> dict | None:

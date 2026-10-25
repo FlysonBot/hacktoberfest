@@ -65,3 +65,9 @@ def test_reordered_ops():  # eval: 26b turned "50, 30, 70, 20, 40" into 50, 30, 
 def test_generated_example_skips_question_checks():
     a = answer('queue', ['3', '8'], ops(('enqueue', '5'), ('dequeue',)), source='generated_example')
     assert validate('how does a queue work?', a) == []
+
+
+def test_hash_needs_table_size():  # JS computes key % initial[0]
+    q = 'Insert 15 into an empty hash table of size 10'
+    assert validate(q, answer('hash_chaining', ['10'], ops(('insert', '15')))) == []
+    assert any('table size' in p for p in validate(q, answer('hash_chaining', [], ops(('insert', '15')))))

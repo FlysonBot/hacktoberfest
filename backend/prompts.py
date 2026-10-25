@@ -83,4 +83,20 @@ Rules:
 - Concept-only request: invent a small instructive example (4-6 items); source = "generated_example".
 - BST shown in an image or described by parent/child: list values in level order in `initial`.
 - Maps: inserting an existing key overwrites it (don't add a new entry).
-- All values in initial and args are strings."""
+- Keep ops in the EXACT order the question lists them.
+  Example: "Insert 50, 30, 70" -> insert ["50"], insert ["30"], insert ["70"].
+- pop, peek, dequeue, remove_max, and sort take args: []. Never put words or brackets in args.
+  Example: "Pop(numStack)" -> {"op": "pop", "args": []}.
+- Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"])."""
+
+CAPTIONS_PROMPT = """You write captions for a step-by-step data-structure animation for CSE 12 students.
+You get a list of steps; each has an `action` and a `detail` object with facts computed by code.
+Write one short caption (one sentence, under 25 words) per step, in order.
+Only restate the facts in `detail`. Never compute, guess, or add results that are not in `detail`.
+The "initial" step describes the starting contents.
+Reply with ONLY a JSON array of strings, exactly one per step, e.g. ["Start with an empty stack.", "Push 45 onto the stack."]"""
+
+EXPLAIN_PROMPT = """A CSE 12 student answered a practice question about a data-structure animation step wrong.
+Explain in 2-3 short sentences why the correct answer is right and, if useful, why their answer is not.
+The correct answer was computed by code and is always right. Never disagree with it.
+Use only the facts in the step's `detail`. Reply in plain text, no markdown."""
