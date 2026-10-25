@@ -163,6 +163,18 @@ def norm_ops(raw):
 
 NUMBER = re.compile(r"-?\d+")
 
+# Number of args each op takes (CLAUDE.md ops table).
+ARG_COUNT = {
+    "pop": 0, "peek": 0, "dequeue": 0, "remove_max": 0, "sort": 0,
+    "push": 1, "enqueue": 1, "append": 1, "prepend": 1, "insert": 1, "search": 1, "remove": 1,
+    "insert_after": 2,
+}
+
+
+def is_subsequence(needle, haystack):
+    it = iter(haystack)
+    return all(n in it for n in needle)
+
 
 def check(question, args, want_structure, want_source, want_initial, want_ops):
     """Returns a list of failure reasons (empty = PASS)."""
@@ -190,6 +202,16 @@ def check(question, args, want_structure, want_source, want_initial, want_ops):
         invented = Counter(n for v in emitted for n in NUMBER.findall(v)) - question_numbers
         if invented:
             problems.append(f"numbers over-used vs question (extra count): {dict(invented)}")
+        # Order: numbers in ops args must appear in the question in the same order.
+        # Ops only; initial may legitimately differ in order (BST level order).
+        op_numbers = [n for _, op_args in got_ops for a in op_args for n in NUMBER.findall(a)]
+        if not is_subsequence(op_numbers, NUMBER.findall(question)):
+            problems.append(f"ops numbers out of order vs question: {op_numbers}")
+
+    wrong_counts = [f"{op}{list(op_args)}" for op, op_args in got_ops
+                    if op in ARG_COUNT and len(op_args) != ARG_COUNT[op]]
+    if wrong_counts:
+        problems.append(f"wrong arg count: {wrong_counts}")
 
     if want_initial is not None:
         if got_initial != want_initial:
