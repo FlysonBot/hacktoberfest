@@ -153,10 +153,14 @@ function init() {
       els.questionInput.value = btn.dataset.example;
       els.questionInput.focus();
       syncGenerateDisabled();
+      autoGrowTextarea(els.questionInput);
     });
   });
 
-  els.questionInput.addEventListener('input', syncGenerateDisabled);
+  els.questionInput.addEventListener('input', () => {
+    syncGenerateDisabled();
+    autoGrowTextarea(els.questionInput);
+  });
   els.questionInput.addEventListener('paste', onQuestionPaste);
   els.generateBtn.addEventListener('click', () => onGenerateClick());
   els.regenerateBtn.addEventListener('click', () => onGenerateClick(els.wsQuestionInput.value));
@@ -242,6 +246,7 @@ function newLesson() {
   ++state.planRequestToken;
   resetLesson();
   els.questionInput.value = '';
+  autoGrowTextarea(els.questionInput);
   releasePreviewUrl();
   state.screenshot = { file: null, base64: null, previewUrl: null };
   els.screenshotInput.value = '';
@@ -258,6 +263,11 @@ function cancelGenerate() {
 }
 
 // ---------- Plan submission ----------
+
+function autoGrowTextarea(el) {
+  el.style.height = 'auto'; // collapse first so scrollHeight reflects the new content, not the old height
+  el.style.height = `${el.scrollHeight}px`;
+}
 
 function syncGenerateDisabled() {
   els.generateBtn.disabled = !els.questionInput.value.trim();
@@ -1069,7 +1079,6 @@ function handleScreenshotFile(file) {
 function setScreenshotRowVisible(visible) {
   els.screenshotRow.classList.toggle('is-visible', visible);
   els.screenshotRow.setAttribute('aria-hidden', visible ? 'false' : 'true');
-  els.composer.classList.toggle('has-screenshot', visible);
 }
 
 function setScreenshot(file, base64) {
