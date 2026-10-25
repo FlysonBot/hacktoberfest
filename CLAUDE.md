@@ -171,6 +171,7 @@ export function render(container, step) // draws one step (SVG or canvas)
 export function questions(steps)        // -> [{ stepIndex, prompt, choices, answer }]  (JS decides answer)
 ```
 
+- `questions()`: `choices` are **strings** and `answer` is the correct choice's string (e.g. `choices: ["11","45","56"], answer: "11"`). Never return a number as `answer`: `frontend/answerAdapter.js` treats a numeric answer as an index into `choices`. `eval/test_viz.mjs` checks this.
 - **Demo dependency (Viz):** the `stack` module's `questions()` must include **"Which value does Pop remove?"** on each pop step, with choices = the values pushed so far and answer = the value JS popped (demo: choices 45 / 56 / 11, answer 11). Used in `docs/DEMO.md`.
 
 ### 5. Sandbox
