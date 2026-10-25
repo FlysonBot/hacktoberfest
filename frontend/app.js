@@ -157,6 +157,7 @@ function init() {
   });
 
   els.questionInput.addEventListener('input', syncGenerateDisabled);
+  els.questionInput.addEventListener('paste', onQuestionPaste);
   els.generateBtn.addEventListener('click', () => onGenerateClick());
   els.regenerateBtn.addEventListener('click', () => onGenerateClick(els.wsQuestionInput.value));
   els.cancelGenerateBtn.addEventListener('click', cancelGenerate);
@@ -1027,7 +1028,21 @@ function hideSandboxError() {
 function onScreenshotChange(e) {
   const file = e.target.files && e.target.files[0];
   if (!file) return;
+  handleScreenshotFile(file);
+}
 
+function onQuestionPaste(e) {
+  const items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  const imageItem = Array.from(items).find((item) => item.type && item.type.startsWith('image/'));
+  if (!imageItem) return; // let plain text paste through as normal
+  const file = imageItem.getAsFile();
+  if (!file) return;
+  e.preventDefault(); // this paste is the screenshot, not text for the textarea
+  handleScreenshotFile(file);
+}
+
+function handleScreenshotFile(file) {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     showScreenshotError('Please choose a PNG, JPEG, WEBP, or GIF image.');
     els.screenshotInput.value = '';
