@@ -7,6 +7,9 @@ import { matchDemoQuestion } from './demoCache.js';
 import { formatPlanSummary } from './planSummary.js';
 
 const PLAN_TIMEOUT_MS = 20000;
+const SLOW_TEXT_DELAY_MS = 5000;
+const DEFAULT_GENERATING_TEXT = 'This usually takes a few seconds.';
+const SLOW_GENERATING_TEXT = 'Gemma is thinking… this can take up to 15 seconds.';
 
 // Tier 1 + Tier 2 structures from CLAUDE.md's show_visualization enum. A
 // structure is only ever loaded from here, as frontend/viz/<structure>.js —
@@ -61,6 +64,7 @@ const els = {
   stageCard: document.getElementById('stage-card'),
   vizContainer: document.getElementById('viz-container'),
   generatingOverlay: document.getElementById('generating-overlay'),
+  generatingSub: document.getElementById('generating-sub'),
   cancelGenerateBtn: document.getElementById('cancel-generate-btn'),
   stageErrorBanner: document.getElementById('stage-error-banner'),
   stageErrorBody: document.getElementById('stage-error-body'),
@@ -289,16 +293,23 @@ async function onGenerateClick(queryOverride) {
     state.planAbortController.abort();
   }, PLAN_TIMEOUT_MS);
 
+  els.generatingSub.textContent = DEFAULT_GENERATING_TEXT;
+  const slowTextTimer = setTimeout(() => {
+    els.generatingSub.textContent = SLOW_GENERATING_TEXT;
+  }, SLOW_TEXT_DELAY_MS);
+
   devSetStatus('POST /api/plan — sending…');
   try {
     const response = await postPlan(payload, { signal: state.planAbortController.signal });
     clearTimeout(timeoutId);
+    clearTimeout(slowTextTimer);
     if (token !== state.planRequestToken) return; // superseded
     devSetStatus('POST /api/plan — 200 OK');
     setMode('live');
     await handlePlanResponse(response);
   } catch (err) {
     clearTimeout(timeoutId);
+    clearTimeout(slowTextTimer);
     if (token !== state.planRequestToken) return;
     if (err && err.name === 'AbortError') {
       if (!state.planTimedOut) return; // user clicked Cancel; cancelGenerate() already reset the screen
