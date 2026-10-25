@@ -221,6 +221,13 @@ function setWorkspacePhase(phase) {
   els.lessonOutline.hidden = !isLesson;
   els.sandboxPanel.hidden = !isLesson;
 
+  if (isGenerating) {
+    // A new attempt starting must not show a stale error or caption left
+    // over from whatever the previous attempt was showing.
+    hideStageError();
+    updateCaption(null);
+  }
+
   renderPracticePanel();
   renderCompletePanel();
 }
