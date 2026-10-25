@@ -17,11 +17,10 @@ export const DEMO_QUESTIONS = [
   },
 ];
 
+// Lowercase letters and digits only (same as backend/demo_cache.py's key), so curly quotes,
+// punctuation, and spacing from copy-paste still hit the cache instead of a live Gemma call.
 export function normalizeQuestionText(text) {
-  return String(text ?? '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
+  return (String(text ?? '').toLowerCase().match(/[a-z0-9]+/g) || []).join(' ');
 }
 
 export function matchDemoQuestion(text) {
