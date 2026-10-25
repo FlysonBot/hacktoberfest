@@ -97,7 +97,11 @@ Rules:
 - Concept-only request: invent a small instructive example (4-6 items); source = "generated_example".
 - BST shown in an image or described by parent/child: list values in level order in `initial`.
 - Maps: inserting an existing key overwrites it (don't add a new entry).
-- All values in initial and args are strings."""
+- Keep ops in the EXACT order the question lists them.
+  Example: "Insert 50, 30, 70" -> insert ["50"], insert ["30"], insert ["70"].
+- pop, peek, dequeue, remove_max, and sort take args: []. Never put words or brackets in args.
+  Example: "Pop(numStack)" -> {"op": "pop", "args": []}.
+- Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"])."""
 
 
 def ops(*pairs):
@@ -134,15 +138,17 @@ config = types.GenerateContentConfig(
     system_instruction=SYSTEM_PROMPT,
     tools=[types.Tool(function_declarations=[SHOW_VISUALIZATION])],
     tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="ANY")),
-    thinking_config=types.ThinkingConfig(thinking_level="minimal"),
+    thinking_config=types.ThinkingConfig(thinking_level="high"),
 )
 
 
-def plan(question):
-    """Returns (model_used, show_visualization args dict), or raises with a reason."""
+def plan(question, note=None):
+    """Returns (model_used, show_visualization args dict), or raises with a reason.
+    `note` (from retry_note) is appended to the question on a retry."""
+    contents = question if note is None else f"{question}\n\n{note}"
     for attempt, model in enumerate(ATTEMPTS):
         try:
-            response = client.models.generate_content(model=model, contents=question, config=config)
+            response = client.models.generate_content(model=model, contents=contents, config=config)
             break
         except genai_errors.ServerError as e:  # 500/503 "high demand"
             if attempt == len(ATTEMPTS) - 1:
@@ -176,17 +182,19 @@ def is_subsequence(needle, haystack):
     return all(n in it for n in needle)
 
 
-def check(question, args, want_structure, want_source, want_initial, want_ops):
-    """Returns a list of failure reasons (empty = PASS)."""
+def validate(question, args):
+    """Checks the backend can run too (no expected answer needed). Returns failure reasons."""
     problems = []
     structure, source = args.get("structure"), args.get("source")
-    if structure != want_structure:
-        problems.append(f"structure={structure!r}, want {want_structure!r}")
-    if source != want_source:
-        problems.append(f"source={source!r}, want {want_source!r}")
-
     got_ops = norm_ops(args.get("ops"))
     got_initial = [str(v).strip() for v in args.get("initial") or []]
+
+    if structure not in VALID_OPS:
+        problems.append(f"unknown structure {structure!r}")
+    else:
+        bad = [op for op, _ in got_ops if op not in VALID_OPS[structure]]
+        if bad:
+            problems.append(f"invalid ops for {structure}: {bad}")
 
     if any(a == "" for _, op_args in got_ops for a in op_args) or "" in got_initial:
         problems.append("empty-string value in initial or args")
@@ -195,7 +203,7 @@ def check(question, args, want_structure, want_source, want_initial, want_ops):
         if not got_initial or not got_initial[0].isdigit() or int(got_initial[0]) <= 0:
             problems.append(f"initial[0] must be a positive integer table size, got {got_initial[:1]}")
 
-    if want_source == "user_question":
+    if source == "user_question":
         # Faithfulness: each number Gemma emits can't appear more often than it does in the question text.
         question_numbers = Counter(NUMBER.findall(question))
         emitted = got_initial + [a for _, op_args in got_ops for a in op_args]
@@ -212,39 +220,79 @@ def check(question, args, want_structure, want_source, want_initial, want_ops):
                     if op in ARG_COUNT and len(op_args) != ARG_COUNT[op]]
     if wrong_counts:
         problems.append(f"wrong arg count: {wrong_counts}")
+    return problems
 
+
+def compare(args, want_structure, want_source, want_initial, want_ops):
+    """Eval-only checks against the expected answer. Never shown to the model."""
+    problems = []
+    if args.get("structure") != want_structure:
+        problems.append(f"structure={args.get('structure')!r}, want {want_structure!r}")
+    if args.get("source") != want_source:
+        problems.append(f"source={args.get('source')!r}, want {want_source!r}")
+    got_ops = norm_ops(args.get("ops"))
     if want_initial is not None:
+        got_initial = [str(v).strip() for v in args.get("initial") or []]
         if got_initial != want_initial:
             problems.append(f"initial={got_initial}, want {want_initial}")
         if got_ops != norm_ops(want_ops):
             problems.append(f"ops differ, want {json.dumps(want_ops)}")
-    else:
-        bad = [op for op, _ in got_ops if op not in VALID_OPS.get(want_structure, set())]
-        if bad:
-            problems.append(f"invalid ops for {want_structure}: {bad}")
-        if not got_ops:
-            problems.append("no ops")
+    elif not got_ops:
+        problems.append("no ops")
     return problems
 
 
-passed = 0
+def check(question, args, *expected):
+    """Returns (validation problems, expected-answer problems); both empty = PASS."""
+    return validate(question, args), compare(args, *expected)
+
+
+def retry_note(validation_problems):
+    """Error note for the retry. Lists only validation problems, so it never leaks the expected answer."""
+    if not validation_problems:
+        return ("Your previous show_visualization call did not match the question. Re-read the question and "
+                "copy its data structure, starting contents, and operations exactly.")
+    lines = "\n".join(f"- {p}" for p in validation_problems)
+    return f"Your previous show_visualization call was invalid:\n{lines}\nCall show_visualization again and fix these problems."
+
+
+def attempt(question, expected, note=None):
+    """One plan() call + check. Returns (validation problems, mismatches), or None on API/tool error."""
+    try:
+        model, args = plan(question, note)
+    except Exception as e:
+        print(f"  error: {e}", flush=True)
+        return None
+    validation, mismatch = check(question, args, *expected)
+    print(f"  {'ok' if not validation + mismatch else 'invalid'}  ({model})", flush=True)
+    for p in validation + mismatch:
+        print(f"    - {p}", flush=True)
+    print(f"  structure={args.get('structure')}  source={args.get('source')}", flush=True)
+    print(f"  initial: {json.dumps(args.get('initial'))}", flush=True)
+    print(f"  ops:     {json.dumps(args.get('ops'))}", flush=True)
+    return validation, mismatch
+
+
+first_try = after_retry = 0
 for i, (question, *expected) in enumerate(CASES, 1):
     if i > 1:
         time.sleep(SLEEP_SECONDS)
     print(f"[{i}/{len(CASES)}] {question.splitlines()[0]}", flush=True)
-    try:
-        model, args = plan(question)
-    except Exception as e:
-        print(f"  FAIL  error: {e}\n", flush=True)
+    result = attempt(question, expected)
+    if result is not None and not result[0] + result[1]:
+        first_try += 1
+        after_retry += 1
+        print("  PASS (first try)\n", flush=True)
         continue
 
-    problems = check(question, args, *expected)
-    passed += not problems
-    print(f"  {'PASS' if not problems else 'FAIL'}  ({model})", flush=True)
-    for p in problems:
-        print(f"    - {p}", flush=True)
-    print(f"  structure={args.get('structure')}  source={args.get('source')}", flush=True)
-    print(f"  initial: {json.dumps(args.get('initial'))}", flush=True)
-    print(f"  ops:     {json.dumps(args.get('ops'))}\n", flush=True)
+    time.sleep(SLEEP_SECONDS)
+    note = retry_note(result[0]) if result else None  # API error: plain retry, nothing to correct
+    print(f"  retrying{' with error note' if note else ''}", flush=True)
+    retry = attempt(question, expected, note)
+    ok = retry is not None and not retry[0] + retry[1]
+    after_retry += ok
+    print(f"  {'PASS (after retry)' if ok else 'FAIL (after retry)'}\n", flush=True)
 
-print(f"Score: {passed}/{len(CASES)} ({100 * passed / len(CASES):.0f}%)", flush=True)
+n = len(CASES)
+print(f"First-try accuracy:   {first_try}/{n} ({100 * first_try / n:.0f}%)", flush=True)
+print(f"After-retry accuracy: {after_retry}/{n} ({100 * after_retry / n:.0f}%)", flush=True)

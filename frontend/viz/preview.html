@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Viz preview</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; background: #FCFAFF; color: #1D1D1F; }
+  .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+  button, select { font: inherit; font-size: 18px; padding: 8px 16px; border-radius: 8px; border: 1px solid #C9C6BF; background: #fff; cursor: pointer; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  #viz { background: #F4EEFF; border-radius: 14px; padding: 16px; min-height: 200px; }
+  #meta { font-family: ui-monospace, Menlo, monospace; font-size: 15px; margin-top: 12px; color: #555; white-space: pre-wrap; }
+  #question { margin-top: 16px; font-size: 18px; }
+  #question button { margin: 6px 8px 0 0; }
+  .right { color: #1E7B3A; font-weight: 600; } .wrong { color: #8C1D18; font-weight: 600; }
+  #error { color: #8C1D18; }
+</style>
+</head>
+<body>
+<h1>Viz preview</h1>
+<div class="bar">
+  <select id="structure">
+    <option value="stack">stack (samples/plan_stack.json)</option>
+    <option value="doubly_linked_list">doubly_linked_list (samples/plan_doubly_linked_list.json)</option>
+  </select>
+  <button id="back">◀ Back</button>
+  <button id="next">Next ▶</button>
+  <span id="counter"></span>
+</div>
+<div id="viz"></div>
+<div id="meta"></div>
+<div id="question"></div>
+<p id="error"></p>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+let mod, steps = [], qs = [], index = 0;
+
+async function load(structure) {
+  try {
+    mod = await import(`./${structure}.js`);
+    const plan = await (await fetch(`../../samples/plan_${structure}.json`)).json();
+    steps = mod.run(plan.initial, plan.ops);
+    qs = mod.questions(steps);
+    index = 0;
+    $('error').textContent = '';
+    show();
+  } catch (e) {
+    $('error').textContent = `Failed to load ${structure}: ${e.message}. Serve the repo root over HTTP (see README/DEMO), not file://.`;
+  }
+}
+
+function show() {
+  const step = steps[index];
+  mod.render($('viz'), step);
+  $('counter').textContent = `Step ${index + 1} / ${steps.length}`;
+  $('back').disabled = index === 0;
+  $('next').disabled = index === steps.length - 1;
+  $('meta').textContent = `action: ${step.action}\ndetail: ${JSON.stringify(step.detail)}\nhighlights: ${JSON.stringify(step.highlights)}`;
+
+  const q = qs.find((x) => x.stepIndex === index);
+  const box = $('question');
+  box.replaceChildren();
+  if (!q) return;
+  const p = document.createElement('div');
+  p.textContent = `Practice: ${q.prompt}`;
+  const result = document.createElement('div');
+  box.append(p);
+  for (const choice of q.choices) {
+    const b = document.createElement('button');
+    b.textContent = choice;
+    b.onclick = () => {
+      const ok = choice === q.answer;
+      result.className = ok ? 'right' : 'wrong';
+      result.textContent = ok ? 'Correct!' : `Not quite. The answer is ${q.answer}.`;
+    };
+    box.append(b);
+  }
+  box.append(result);
+}
+
+$('back').onclick = () => { if (index > 0) { index--; show(); } };
+$('next').onclick = () => { if (index < steps.length - 1) { index++; show(); } };
+$('structure').onchange = (e) => load(e.target.value);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') $('back').click();
+  if (e.key === 'ArrowRight') $('next').click();
+});
+load($('structure').value);
+</script>
+</body>
+</html>
