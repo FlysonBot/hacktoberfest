@@ -35,7 +35,12 @@ def normalize(args) -> dict:
     return {
         'structure': args.get('structure'),
         'initial': [str(v).strip() for v in initial],
-        'ops': [{'op': o.get('op'), 'args': [str(a).strip() for a in o.get('args') or []]} for o in ops],
+        'ops': [
+            # Ops that take no value get [] even if Gemma garbled an empty list into junk like ["[],"].
+            # Safe: JS ignores their args, so this can't change a step or an answer.
+            {'op': o.get('op'), 'args': [] if ARG_COUNT.get(o.get('op')) == 0 else [str(a).strip() for a in o.get('args') or []]}
+            for o in ops
+        ],
         'source': args.get('source'),
     }
 
