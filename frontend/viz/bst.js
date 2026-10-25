@@ -1,6 +1,6 @@
 // Binary search tree visualization: run / render / questions (CLAUDE.md contract 4).
 // JS decides every step and every answer; Gemma only writes captions.
-import { num, step, errorStep, argError, sortChoices, onePerStep, C, SMALL, PILL_H, esc, text, pill, line, svg } from './_shared.js';
+import { num, step, errorStep, argError, sortChoices, onePerStep, C, SMALL, PILL_H, STROKE, U, esc, fitFont, text, pill, pillW, line, svg } from './_shared.js';
 
 const ARGS = { insert: 1, search: 1, remove: 1 };
 
@@ -181,7 +181,7 @@ export function questions(steps) {
 }
 
 // x by in-order index, y by depth (zyBooks BST style).
-const R = 19, DX = 44, DY = 54, PAD = 10, TOP = PAD + PILL_H + 10;
+const R = 19 * U, DX = 44 * U, DY = 54 * U, PAD = 10 * U, TOP = PAD + PILL_H + 10 * U;
 
 export function render(container, s) {
   const { root, nodes } = s.state;
@@ -197,7 +197,7 @@ export function render(container, s) {
     inorder(n.right, depth + 1);
   })(root, 0);
 
-  const width = Math.max(PAD * 2 + R * 2 + Math.max(nodes.length - 1, 0) * DX, 200);
+  const width = Math.max(PAD * 2 + R * 2 + Math.max(nodes.length - 1, 0) * DX, 260);
   const height = TOP + R * 2 + maxDepth * DY + PAD;
   const hl = new Set(s.highlights);
   const d = s.detail || {};
@@ -208,7 +208,7 @@ export function render(container, s) {
   const opValue = d.target ?? d.value;
   if (s.action !== 'initial' && s.action !== 'error' && opValue !== undefined) {
     const label = `${s.action} ${opValue}`;
-    parts.push(pill(PAD + (label.length * 6.2 + 14) / 2, PAD, label));
+    parts.push(pill(PAD + pillW(label) / 2, PAD, label));
   }
 
   if (!nodes.length) parts.push(text(width / 2, TOP + R, 'empty tree', { size: SMALL + 1, color: C.muted }));
@@ -218,7 +218,7 @@ export function render(container, s) {
       if (c === null) continue;
       const a = pos.get(n.value), b = pos.get(c);
       const onPath = hl.has(n.value) && hl.has(c);
-      parts.push(line(a.x, a.y, b.x, b.y, onPath ? { color: C.hiLine, width: 1.75 } : {}));
+      parts.push(line(a.x, a.y, b.x, b.y, onPath ? { color: C.hiLine, width: STROKE + 0.5 } : {}));
     }
   }
   for (const n of nodes) {
@@ -226,8 +226,8 @@ export function render(container, s) {
     const isCur = n.value === current;
     const on = hl.has(n.value);
     parts.push(
-      `<circle cx="${x}" cy="${y}" r="${R}" stroke-width="${isCur ? 2 : 1.5}" style="fill:${isCur ? C.strong : on ? C.hiFill : C.box};stroke:${on || isCur ? C.hiLine : C.line}"/>`,
-      text(x, y, esc(n.value), { size: String(n.value).length > 2 ? 15 : 18, weight: 500 })
+      `<circle cx="${x}" cy="${y}" r="${R}" stroke-width="${isCur ? STROKE + 0.5 : STROKE}" style="fill:${isCur ? C.strong : on ? C.hiFill : C.box};stroke:${on || isCur ? C.hiLine : C.line}"/>`,
+      text(x, y, esc(n.value), { size: fitFont(n.value, R * 2), weight: 500 })
     );
   }
 

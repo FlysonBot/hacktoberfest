@@ -1,6 +1,6 @@
 // Stack visualization: run / render / questions (CLAUDE.md contract 4).
 // JS decides every step and every answer; Gemma only writes captions.
-import { num, step, errorStep, argError, sortChoices, onePerStep, C, BOX_W, BOX_H, GAP, SMALL, PILL_H, text, box, pill, line, svg } from './_shared.js';
+import { num, step, errorStep, argError, sortChoices, onePerStep, C, BOX_W, BOX_H, GAP, SMALL, PILL_H, STROKE, U, text, box, pill, pillW, line, svg } from './_shared.js';
 
 const ARGS = { push: 1, pop: 0, peek: 0 };
 
@@ -46,6 +46,7 @@ export function run(initial, ops) {
   return steps;
 }
 
+// Predict-first: asked on the step BEFORE the pop/peek, while the answer isn't shown yet.
 // Choices are strings and `answer` is the correct choice's string (not an index).
 export function questions(steps) {
   const qs = [];
@@ -53,16 +54,17 @@ export function questions(steps) {
     if (i === 0 || s.detail.empty || (s.action !== 'pop' && s.action !== 'peek')) return;
     const choices = sortChoices([...new Set(steps[i - 1].state.items.map(String))]);
     if (choices.length < 2) return;
-    const prompt = s.action === 'pop' ? 'Which value does Pop remove?' : 'Which value does Peek return?';
-    qs.push({ stepIndex: i, prompt, choices, answer: String(s.detail.value) });
+    const prompt = s.action === 'pop' ? 'Which value will Pop remove?' : 'Which value will Peek return?';
+    qs.push({ stepIndex: i - 1, prompt, choices, answer: String(s.detail.value) });
   });
   return onePerStep(qs);
 }
 
-const PAD = 10, TAG_W = 34;
-const LEFT = PAD + TAG_W + 8; // x of the stack column
-const RIGHT = LEFT + BOX_W + 28; // x of the popped column
+const PAD = 10 * U, TAG_W = pillW('top');
+const LEFT = PAD + TAG_W + 8 * U; // x of the stack column
+const RIGHT = LEFT + BOX_W + 28 * U; // x of the popped column
 const WIDTH = RIGHT + BOX_W + PAD;
+const BASE_LABEL = SMALL + 8 * U; // room under the base line for "bottom"
 
 export function render(container, s) {
   const { items, top } = s.state;
@@ -71,12 +73,12 @@ export function render(container, s) {
 
   // The popped value sits to the right, at the slot it was popped from (one above the new top).
   const rows = Math.max(items.length + (popped !== null ? 1 : 0), 1);
-  const height = PAD + SMALL + 6 + rows * (BOX_H + GAP) + 18 + PAD;
-  const baseY = height - PAD - 18; // y of the base line
+  const height = PAD + SMALL + 8 * U + rows * (BOX_H + GAP) + BASE_LABEL + PAD;
+  const baseY = height - PAD - BASE_LABEL; // y of the base line
   const rowY = (i) => baseY - GAP - (i + 1) * BOX_H - i * GAP;
   const parts = [
-    line(LEFT - 8, baseY, LEFT + BOX_W + 8, baseY, { width: 1.5 }),
-    text(LEFT + BOX_W / 2, baseY + 13, 'bottom', { size: SMALL, color: C.muted }),
+    line(LEFT - 8 * U, baseY, LEFT + BOX_W + 8 * U, baseY, { width: STROKE }),
+    text(LEFT + BOX_W / 2, baseY + BASE_LABEL / 2 + 2, 'bottom', { size: SMALL, color: C.muted }),
   ];
 
   items.forEach((value, i) => {
@@ -88,7 +90,7 @@ export function render(container, s) {
 
   if (popped !== null) {
     const y = rowY(items.length);
-    parts.push(box(RIGHT, y, popped, { ghost: true }), text(RIGHT + BOX_W / 2, y - 9, 'popped', { size: SMALL, color: C.muted }));
+    parts.push(box(RIGHT, y, popped, { ghost: true }), text(RIGHT + BOX_W / 2, y - SMALL * 0.8, 'popped', { size: SMALL, color: C.muted }));
   }
 
   container.innerHTML = svg(WIDTH, height, `Stack: ${items.join(', ') || 'empty'}`, parts);

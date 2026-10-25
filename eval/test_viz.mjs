@@ -102,11 +102,11 @@ for (const structure of STRUCTURES) {
 
 const { stack, doubly_linked_list: dll } = mods;
 
-test('stack: demo question is "Which value does Pop remove?" with answer 11', () => {
+test('stack: demo question "Which value will Pop remove?" is asked on the step before the pop, answer 11', () => {
   const plan = load('samples/plan_stack.json');
-  const q = stack.questions(stack.run(plan.initial, plan.ops)).find((x) => x.prompt === 'Which value does Pop remove?');
+  const q = stack.questions(stack.run(plan.initial, plan.ops)).find((x) => x.prompt === 'Which value will Pop remove?');
   assert.ok(q, 'missing pop question');
-  assert.equal(q.stepIndex, 4);
+  assert.equal(q.stepIndex, 3);
   assert.deepStrictEqual(q.choices, ['11', '45', '56']);
   assert.equal(q.answer, '11');
 });
@@ -206,8 +206,8 @@ if (queue) {
     assert.deepStrictEqual(s[3].detail, { value: null, size: 0, empty: true });
     assert.deepStrictEqual(s[4].state, { items: [2], front: 0, back: 0 });
     const plan = load('samples/plan_queue.json');
-    const q = queue.questions(queue.run(plan.initial, plan.ops)).find((x) => x.prompt === 'Which value does dequeue remove?');
-    assert.deepStrictEqual([q.stepIndex, q.answer, q.choices], [4, '7', ['7', '14', '21']]);
+    const q = queue.questions(queue.run(plan.initial, plan.ops)).find((x) => x.prompt === 'Which value will dequeue remove?');
+    assert.deepStrictEqual([q.stepIndex, q.answer, q.choices], [3, '7', ['7', '14', '21']]);
   });
 }
 
