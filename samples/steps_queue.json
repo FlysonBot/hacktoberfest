@@ -1,0 +1,170 @@
+{
+  "structure": "queue",
+  "initial": [],
+  "ops": [
+    {
+      "op": "enqueue",
+      "args": [
+        "7"
+      ]
+    },
+    {
+      "op": "enqueue",
+      "args": [
+        "14"
+      ]
+    },
+    {
+      "op": "enqueue",
+      "args": [
+        "21"
+      ]
+    },
+    {
+      "op": "dequeue",
+      "args": []
+    },
+    {
+      "op": "enqueue",
+      "args": [
+        "28"
+      ]
+    },
+    {
+      "op": "peek",
+      "args": []
+    }
+  ],
+  "steps": [
+    {
+      "state": {
+        "items": [],
+        "front": null,
+        "back": null
+      },
+      "highlights": [],
+      "action": "initial",
+      "detail": {
+        "values": []
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "items": [
+          7
+        ],
+        "front": 0,
+        "back": 0
+      },
+      "highlights": [
+        0
+      ],
+      "action": "enqueue",
+      "detail": {
+        "value": 7,
+        "size": 1
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "items": [
+          7,
+          14
+        ],
+        "front": 0,
+        "back": 1
+      },
+      "highlights": [
+        1
+      ],
+      "action": "enqueue",
+      "detail": {
+        "value": 14,
+        "size": 2
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "items": [
+          7,
+          14,
+          21
+        ],
+        "front": 0,
+        "back": 2
+      },
+      "highlights": [
+        2
+      ],
+      "action": "enqueue",
+      "detail": {
+        "value": 21,
+        "size": 3
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "items": [
+          14,
+          21
+        ],
+        "front": 0,
+        "back": 1
+      },
+      "highlights": [
+        0
+      ],
+      "action": "dequeue",
+      "detail": {
+        "value": 7,
+        "size": 2,
+        "new_front": 14
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "items": [
+          14,
+          21,
+          28
+        ],
+        "front": 0,
+        "back": 2
+      },
+      "highlights": [
+        2
+      ],
+      "action": "enqueue",
+      "detail": {
+        "value": 28,
+        "size": 3
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "items": [
+          14,
+          21,
+          28
+        ],
+        "front": 0,
+        "back": 2
+      },
+      "highlights": [
+        0
+      ],
+      "action": "peek",
+      "detail": {
+        "value": 14,
+        "size": 3
+      },
+      "caption": ""
+    }
+  ]
+}

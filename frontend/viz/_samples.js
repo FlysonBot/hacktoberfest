@@ -28,4 +28,17 @@ export const PLANS = {
     ops: [{ op: 'search', args: ['65'] }],
     source: 'user_question',
   },
+  queue: {
+    structure: 'queue',
+    initial: [],
+    ops: [
+      { op: 'enqueue', args: ['7'] },
+      { op: 'enqueue', args: ['14'] },
+      { op: 'enqueue', args: ['21'] },
+      { op: 'dequeue', args: [] },
+      { op: 'enqueue', args: ['28'] },
+      { op: 'peek', args: [] },
+    ],
+    source: 'user_question',
+  },
 };
