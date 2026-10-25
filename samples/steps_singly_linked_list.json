@@ -1,0 +1,248 @@
+{
+  "structure": "singly_linked_list",
+  "initial": [
+    "5",
+    "9"
+  ],
+  "ops": [
+    {
+      "op": "append",
+      "args": [
+        "12"
+      ]
+    },
+    {
+      "op": "prepend",
+      "args": [
+        "3"
+      ]
+    },
+    {
+      "op": "insert_after",
+      "args": [
+        "9",
+        "7"
+      ]
+    },
+    {
+      "op": "remove",
+      "args": [
+        "5"
+      ]
+    },
+    {
+      "op": "search",
+      "args": [
+        "12"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "state": {
+        "nodes": [
+          5,
+          9
+        ],
+        "head": 0,
+        "tail": 1
+      },
+      "highlights": [],
+      "action": "initial",
+      "detail": {
+        "values": [
+          5,
+          9
+        ]
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          5,
+          9,
+          12
+        ],
+        "head": 0,
+        "tail": 2
+      },
+      "highlights": [
+        1,
+        2
+      ],
+      "action": "append",
+      "detail": {
+        "value": 12,
+        "index": 2,
+        "new_tail": true
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          5,
+          9,
+          12
+        ],
+        "head": 0,
+        "tail": 3
+      },
+      "highlights": [
+        0,
+        1
+      ],
+      "action": "prepend",
+      "detail": {
+        "value": 3,
+        "index": 0,
+        "new_head": true
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          5,
+          9,
+          7,
+          12
+        ],
+        "head": 0,
+        "tail": 4
+      },
+      "highlights": [
+        2,
+        3
+      ],
+      "action": "insert_after",
+      "detail": {
+        "after": 9,
+        "value": 7,
+        "index": 3,
+        "new_tail": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          9,
+          7,
+          12
+        ],
+        "head": 0,
+        "tail": 3
+      },
+      "highlights": [
+        0,
+        1
+      ],
+      "action": "remove",
+      "detail": {
+        "value": 5,
+        "index": 1,
+        "found": true,
+        "new_head": false,
+        "new_tail": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          9,
+          7,
+          12
+        ],
+        "head": 0,
+        "tail": 3
+      },
+      "highlights": [
+        0
+      ],
+      "action": "search",
+      "detail": {
+        "target": 12,
+        "current": 3,
+        "index": 0,
+        "found": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          9,
+          7,
+          12
+        ],
+        "head": 0,
+        "tail": 3
+      },
+      "highlights": [
+        1
+      ],
+      "action": "search",
+      "detail": {
+        "target": 12,
+        "current": 9,
+        "index": 1,
+        "found": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          9,
+          7,
+          12
+        ],
+        "head": 0,
+        "tail": 3
+      },
+      "highlights": [
+        2
+      ],
+      "action": "search",
+      "detail": {
+        "target": 12,
+        "current": 7,
+        "index": 2,
+        "found": false
+      },
+      "caption": ""
+    },
+    {
+      "state": {
+        "nodes": [
+          3,
+          9,
+          7,
+          12
+        ],
+        "head": 0,
+        "tail": 3
+      },
+      "highlights": [
+        3
+      ],
+      "action": "search",
+      "detail": {
+        "target": 12,
+        "current": 12,
+        "index": 3,
+        "found": true
+      },
+      "caption": ""
+    }
+  ]
+}
