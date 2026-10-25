@@ -302,7 +302,14 @@ button {
 /* Height is set from JS (scrollHeight) as the student types, so the box
    grows with the content instead of scrolling internally. The transition
    animates each step of that growth; max-height caps it before it falls
-   back to an internal scrollbar. */
+   back to an internal scrollbar.
+   Design review will keep flagging this `height` transition as a
+   layout-thrash risk — sanctioned exception: the reflow comes from
+   reading scrollHeight in JS, which any auto-grow technique needs
+   regardless of which CSS property receives the result afterward;
+   grid-template-rows would not remove that cost here. One textarea,
+   per-keystroke, is the standard pattern (GitHub/Twitter compose boxes
+   use the same approach). */
 .composer-input {
   display: block;
   width: 100%;
