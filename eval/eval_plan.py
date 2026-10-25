@@ -11,6 +11,7 @@ Needs GEMINI_API_KEY in the environment.
 import json
 import re
 import time
+from collections import Counter
 
 try:
     # Use the OS certificate store so HTTPS works behind antivirus TLS scanning (e.g. Avast).
@@ -183,12 +184,12 @@ def check(question, args, want_structure, want_source, want_initial, want_ops):
             problems.append(f"initial[0] must be a positive integer table size, got {got_initial[:1]}")
 
     if want_source == "user_question":
-        # Faithfulness: every number Gemma emits must appear in the question text.
-        question_numbers = set(NUMBER.findall(question))
+        # Faithfulness: each number Gemma emits can't appear more often than it does in the question text.
+        question_numbers = Counter(NUMBER.findall(question))
         emitted = got_initial + [a for _, op_args in got_ops for a in op_args]
-        invented = sorted({n for v in emitted for n in NUMBER.findall(v)} - question_numbers)
+        invented = Counter(n for v in emitted for n in NUMBER.findall(v)) - question_numbers
         if invented:
-            problems.append(f"numbers not in question: {invented}")
+            problems.append(f"numbers over-used vs question (extra count): {dict(invented)}")
 
     if want_initial is not None:
         if got_initial != want_initial:
