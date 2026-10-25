@@ -245,7 +245,7 @@ function newLesson() {
   releasePreviewUrl();
   state.screenshot = { file: null, base64: null, previewUrl: null };
   els.screenshotInput.value = '';
-  els.screenshotRow.hidden = true;
+  setScreenshotRowVisible(false);
   hidePlanError();
   setScreen('start');
   syncGenerateDisabled();
@@ -1066,6 +1066,12 @@ function handleScreenshotFile(file) {
   reader.readAsDataURL(file);
 }
 
+function setScreenshotRowVisible(visible) {
+  els.screenshotRow.classList.toggle('is-visible', visible);
+  els.screenshotRow.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  els.composer.classList.toggle('has-screenshot', visible);
+}
+
 function setScreenshot(file, base64) {
   releasePreviewUrl();
   const previewUrl = URL.createObjectURL(file);
@@ -1073,7 +1079,7 @@ function setScreenshot(file, base64) {
   els.screenshotPreviewImg.src = previewUrl;
   els.screenshotFilename.textContent = file.name;
   els.screenshotSub.textContent = `Screenshot · ${Math.max(1, Math.round(file.size / 1024))} KB`;
-  els.screenshotRow.hidden = false;
+  setScreenshotRowVisible(true);
   els.wsScreenshotChip.hidden = false;
   els.wsScreenshotChip.textContent = file.name;
 }
@@ -1082,7 +1088,7 @@ function onScreenshotRemove() {
   releasePreviewUrl();
   state.screenshot = { file: null, base64: null, previewUrl: null };
   els.screenshotInput.value = '';
-  els.screenshotRow.hidden = true;
+  setScreenshotRowVisible(false);
   els.screenshotPreviewImg.removeAttribute('src');
   els.wsScreenshotChip.hidden = true;
 }
