@@ -90,7 +90,7 @@ Rules:
 - Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"]).
 - Students write informally, with typos, missing punctuation, or partial info. Interpret generously; if values
   are missing, invent a small example instead of refusing. If the structure starts empty, initial must be [].
-- Complete examples of correct JSON replys (copy this shape exactly):
+- Complete examples of correct JSON replies (copy this shape exactly):
   "Explain how a stack works." ->
   {"structure": "stack", "initial": [], "ops": [{"op": "push", "args": ["5"]}, {"op": "push", "args": ["8"]},
    {"op": "push", "args": ["2"]}, {"op": "pop", "args": []}, {"op": "peek", "args": []}], "source": "generated_example"}
