@@ -22,12 +22,12 @@ flowchart LR
 ```
 
 **The one rule: Gemma understands, JavaScript computes.**
-Gemma 4 reads the question and decides *what* to show: which structure, its starting contents, and the exact operations, as a small JSON plan. Every step, every state, and every correct answer is computed by plain JavaScript, so **the animation is never wrong**. Gemma also writes captions and explains wrong answers, but only by restating facts the JS simulator produced.
+Gemma 4 reads the question and decides _what_ to show: which structure, its starting contents, and the exact operations, as a small JSON plan. Every step, every state, and every correct answer is computed by plain JavaScript, so **the animation is never wrong**. Gemma also writes captions and explains wrong answers, but only by restating facts the JS simulator produced.
 
 ## Why Gemma 4
 
 | Feature | How we use it |
-|---|---|
+| --- | --- |
 | **Structured output** | Gemma replies with one JSON object, `{structure, initial, ops, source}`, that the backend checks against our schema. We started with function calling, but our tests showed the 26B model returning empty or garbled plans in tool mode, while plain JSON replies got the values right. |
 | **Image input** | Screenshot a zyBooks or homework question; Gemma 4 reads the values and operations straight from the image. |
 | **Speed vs. thinking** | We measured thinking levels and use `minimal`: typed questions come back in about 2 seconds, which keeps the app interactive. |
@@ -58,7 +58,7 @@ The three demo questions also have cached plans, so they load instantly even if 
 ## Supported structures
 
 | Structure | Operations |
-|---|---|
+| --- | --- |
 | Stack | push, pop, peek |
 | Queue | enqueue, dequeue, peek |
 | Singly linked list | append, prepend, insert_after, remove, search |
@@ -104,10 +104,10 @@ See [CLAUDE.md](CLAUDE.md) for the full contracts (plan format, step format, viz
 
 Built at **DS3 Hacktoberfest Hack Day 2026 (UCSD)** by:
 
-- NAME1
-- NAME2
-- NAME3
-- NAME4
+- Alexander Hughes
+- Flyson Lin
+- Leo Xie
+- Pax Poonapanont
 
 ## License
 
