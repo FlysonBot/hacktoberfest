@@ -9,7 +9,7 @@ One person talks, one person drives the laptop. Rehearse with a timer at least t
 |---|---|---|---|
 | 1 | Hook | 15s | 0:15 |
 | 2 | Demo 1: typed stack question | 45s | 1:00 |
-| 3 | Demo 2: linked-list question ("Here's what I read") | 45s | 1:45 |
+| 3 | Demo 2: screenshot of a linked-list question, the multimodal moment | 45s | 1:45 |
 | 4 | Demo 3: sandbox | 30s | 2:15 |
 | 5 | How it works | 30s | 2:45 |
 | 6 | Close | 15s | 3:00 |
@@ -57,17 +57,23 @@ Wait for the explanation, then click **Next** to step 4 so the pop removes 11:
 
 ---
 
-## 3. Demo 2: linked-list question (45s)
-
-**Click:** the **"Demo 2: Linked list insert"** chip, then **Visualize**. This is the zyBooks question (cached, loads instantly):
-> numList is a doubly-linked list: 12 ⇄ 30. ListInsertAfter(numList, node 30, node 8); ListInsertAfter(numList, node 12, node 45); ListInsertAfter(numList, node 45, node 76)
-
-**Point at the "Here's what I read" line**, which shows: Doubly Linked List · start with 12, 30 · insert_after 30 8, insert_after 12 45, insert_after 45 76.
+## 3. Demo 2: screenshot (45s), the multimodal moment
 
 **Say:**
-> "Before animating anything, it shows exactly what it understood, so the student can catch a misread question. And you don't have to retype homework: screenshots work too. Gemma 4 reads the values and operations straight from the image."
+> "Most of the time you don't want to retype your homework. So, screenshot."
+
+**Click:** **Screenshot** and choose `docs/demo/dll_question.png` (or paste the image into the question box). It's the real zyBooks activity: "Given weeklySalesList: 12, 30", then `ListInsertNodeAfter(…, node30, node8)`, `(…, node12, node45)`, `(…, node45, node76)`. The question box fills in **"Solve this"** automatically; if it doesn't, type `solve this`.
+
+**Click:** **Visualize**. This is a live Gemma 4 call; it takes about 3–4 seconds.
+
+**Point at the "Here's what I read" line**, which should show: Doubly Linked List · start with 12, 30 · insert_after 30 8, insert_after 12 45, insert_after 45 76.
+
+**Say:**
+> "Gemma 4 read the image and pulled out the exact values and operations, and before animating anything it shows what it understood, so the student can catch a misread question."
 
 **Click:** Next through the steps to the final list `12 ⇄ 45 ⇄ 76 ⇄ 30 ⇄ 8`.
+
+> **Backup:** if the upload fails, takes more than ~10 seconds, or the "Here's what I read" line is wrong, click **New lesson**, then the **"Demo 2: Linked list insert"** chip and **Visualize**. It's the same zyBooks question from a cached plan and loads instantly. Say: "Free-tier Gemma gets busy at hackathons, so here's the same question cached."
 
 ---
 
@@ -121,7 +127,8 @@ insert 70, search 70
 
 ## Demo checklist
 
-- [ ] Screenshot of the zyBooks stack question saved for the Hook (`docs/demo/dll_question.png` is for the README)
+- [ ] Screenshots saved: `docs/demo/dll_question.png` (Demo 2, easy to find in the file picker) and the zyBooks stack question (Hook)
+- [ ] Demo 2 screenshot tested live right before recording: "Here's what I read" shows 12, 30 and the 3 `insert_after` ops
 - [ ] All 3 demo chips load instantly from the cached plans in `frontend/demo/` (stack 5 steps, DLL 4, BST 4); captions and the Demo 1 explanation show up live
 - [ ] `GEMINI_API_KEY` set in the terminal running the server; server started with `uv run uvicorn backend.main:app`
 - [ ] Browser zoomed in (125–150%), other tabs closed, notifications off
