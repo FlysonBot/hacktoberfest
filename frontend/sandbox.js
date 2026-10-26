@@ -15,6 +15,33 @@ export const OPS_BY_STRUCTURE = {
   insertion_sort: { sort: 0 },
 };
 
+// One realistic example per structure, in that structure's own vocabulary
+// (so a BST hint never says "push", a stack hint never says "insert", etc.)
+// for the sandbox UI's placeholder/hint text and error messages.
+const EXAMPLE_OPS_TEXT = {
+  singly_linked_list: 'append 5, remove 3',
+  doubly_linked_list: 'append 5, remove 3',
+  stack: 'push 5, pop',
+  queue: 'enqueue 5, dequeue',
+  bst: 'insert 5, search 3',
+  hash_linear_probing: 'insert 5, search 3',
+  hash_chaining: 'insert 5, search 3',
+  heap: 'insert 5, remove_max',
+  insertion_sort: 'sort',
+};
+
+// Falls back to building one from the ops table for any structure not
+// listed above, so this never goes stale if a new structure is added.
+export function exampleOpsText(structure) {
+  if (EXAMPLE_OPS_TEXT[structure]) return EXAMPLE_OPS_TEXT[structure];
+  const table = OPS_BY_STRUCTURE[structure];
+  if (!table) return '';
+  return Object.entries(table)
+    .slice(0, 2)
+    .map(([op, argCount]) => (argCount > 0 ? `${op} 5` : op))
+    .join(', ');
+}
+
 // Returns { ops } on success, or { error } (a message naming the bad phrase)
 // on failure. All-or-nothing: an invalid phrase anywhere rejects the whole
 // batch rather than applying a partial prefix.
@@ -30,7 +57,7 @@ export function parseSandboxOps(text, structure) {
     .filter((p) => p.length > 0);
 
   if (phrases.length === 0) {
-    return { error: 'Type at least one operation, e.g. "push 5, pop".' };
+    return { error: `Type at least one operation, e.g. "${exampleOpsText(structure)}".` };
   }
 
   const ops = [];

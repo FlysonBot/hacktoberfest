@@ -2,7 +2,7 @@ import { postPlan, postCaptions, postExplain, ApiError } from './api.js';
 import { Player } from './player.js';
 import { isCorrectChoice, getCorrectChoiceText, describeChoice } from './answerAdapter.js';
 import { fallbackCaption, formatActionTitle } from './captions.js';
-import { parseSandboxOps } from './sandbox.js';
+import { parseSandboxOps, exampleOpsText } from './sandbox.js';
 import { matchDemoQuestion } from './demoCache.js';
 import { formatPlanSummary } from './planSummary.js';
 
@@ -98,6 +98,7 @@ const els = {
   completeNewLessonBtn: document.getElementById('complete-new-lesson-btn'),
 
   sandboxPanel: document.getElementById('sandbox-panel'),
+  sandboxHint: document.getElementById('sandbox-hint'),
   sandboxForm: document.getElementById('sandbox-form'),
   sandboxInput: document.getElementById('sandbox-input'),
   sandboxError: document.getElementById('sandbox-error'),
@@ -541,6 +542,18 @@ function renderTitleRow() {
     els.planSummary.hidden = true;
     els.planSummary.textContent = '';
   }
+
+  renderSandboxHint();
+}
+
+function renderSandboxHint() {
+  // Each structure gets an example in its own vocabulary — a BST hint
+  // should never say "push", a stack hint should never say "insert".
+  const example = state.structure ? exampleOpsText(state.structure) : 'push 5, pop';
+  const code = document.createElement('code');
+  code.textContent = example;
+  els.sandboxHint.replaceChildren('Type comma-separated ops for this structure, e.g. ', code, '.');
+  els.sandboxInput.placeholder = example;
 }
 
 function showStageError(message) {
