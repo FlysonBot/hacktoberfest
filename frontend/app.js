@@ -1055,6 +1055,14 @@ function setScreenshot(file, base64) {
   setScreenshotRowVisible(true);
   els.wsScreenshotChip.hidden = false;
   els.wsScreenshotChip.textContent = file.name;
+
+  // A screenshot alone is a complete question — don't make the student
+  // type something just to enable Visualize.
+  if (!els.questionInput.value.trim()) {
+    els.questionInput.value = 'Solve this';
+    syncGenerateDisabled();
+    autoGrowTextarea(els.questionInput);
+  }
 }
 
 function onScreenshotRemove() {
