@@ -4,23 +4,20 @@ from collections import Counter
 from google.genai import types
 
 from backend import demo_cache, gemma
-from backend.prompts import ARG_COUNT, SHOW_VISUALIZATION, SYSTEM_PROMPT, VALID_OPS
+from backend.prompts import ARG_COUNT, SYSTEM_PROMPT, VALID_OPS
 
 NUMBER = re.compile(r'-?\d+')
 PLAIN_VALUE = re.compile(r'-?[\w.]+')  # one number or word; rejects junk like "// empty stack"
 SOURCES = ('user_question', 'generated_example')
 
+# Plain JSON reply, no tool call (see gemma.call_tool). minimal thinking: 3/3 correct in 2-14s on 2026-10-25;
+# high was 4/4 correct but 10-20s, too close to the frontend's 20s limit.
 config = types.GenerateContentConfig(
     system_instruction=SYSTEM_PROMPT,
-    tools=[types.Tool(function_declarations=[SHOW_VISUALIZATION])],
-    tool_config=types.ToolConfig(
-        function_calling_config=types.FunctionCallingConfig(mode='ANY')
-    ),
-    thinking_config=types.ThinkingConfig(thinking_level='high'),  # what eval/eval_plan.py tested
-    http_options=types.HttpOptions(timeout=30_000),  # ms; 26b plan calls took 1-3s
+    thinking_config=types.ThinkingConfig(thinking_level='minimal'),
+    http_options=types.HttpOptions(timeout=18_000),  # ms; under the frontend's 20s PLAN_TIMEOUT_MS
 )
-# Demo questions have a cached answer, so give up on a slow call sooner and serve that instead.
-demo_config = config.model_copy(update={'http_options': types.HttpOptions(timeout=15_000)})
+image_config = config.model_copy(update={'http_options': types.HttpOptions(timeout=40_000)})  # 31b reads images slowly
 
 
 def normalize(args) -> dict:
@@ -60,6 +57,18 @@ def validate(text: str, args, has_image: bool = False) -> list[str]:
         problems.append(f'source must be one of {list(SOURCES)}, got {source!r}')
     if not ops and source == 'generated_example':  # a typed question may only ask to show a structure
         problems.append('no ops')
+    if not ops and not initial:  # eval: 26b returned initial [] and ops [] for the BST demo question
+        problems.append('empty plan: a specific question needs starting contents or operations')
+    # insert_after's first arg must already be in the list at that point (eval: swapped or dropped initial values).
+    if structure in ('singly_linked_list', 'doubly_linked_list'):
+        present = set(initial)
+        for op, op_args in ops:
+            if op == 'insert_after' and len(op_args) == 2 and op_args[0] not in present:
+                problems.append(f"insert_after {op_args}: node {op_args[0]} isn't in the list at that point")
+            if op in ('append', 'prepend', 'insert_after') and op_args:
+                present.add(op_args[-1])
+            elif op == 'remove' and op_args:
+                present.discard(op_args[0])
     for op, op_args in ops:
         if op not in VALID_OPS[structure]:
             problems.append(f'op {op!r} invalid for {structure}')
@@ -98,10 +107,19 @@ def validate(text: str, args, has_image: bool = False) -> list[str]:
 def retry_note(problems: list[str]) -> str:
     """Tells Gemma what was wrong with its last answer (same wording as eval/eval_plan.py)."""
     if not problems:
-        return ('Your previous show_visualization call did not match the question. Re-read the question and '
+        return ('Your previous JSON reply did not match the question. Re-read the question and '
                 'copy its data structure, starting contents, and operations exactly.')
     lines = '\n'.join(f'- {p}' for p in problems)
-    return f'Your previous show_visualization call was invalid:\n{lines}\nCall show_visualization again and fix these problems.'
+    return f'Your previous JSON reply was invalid:\n{lines}\nReply again with the fixed JSON object.'
+
+
+def number_hint(text: str) -> str:
+    """Small models copy values better when told them up front (teammate suggestion)."""
+    numbers = NUMBER.findall(text)
+    if not numbers:
+        return ''
+    return (f'\n\nThe numbers in the question, in order, are: {", ".join(numbers)}. '
+            'Use exactly these values; never change, translate, or reorder them.')
 
 
 def make_plan(text: str, image_base64: str | None = None) -> dict:
@@ -110,9 +128,10 @@ def make_plan(text: str, image_base64: str | None = None) -> dict:
     note = None
     for _ in range(2):  # retry once on invalid output, telling Gemma what was wrong
         try:
+            prompt = text + ('' if image_base64 else number_hint(text))
             args = gemma.call_tool(
-                text if note is None else f'{text}\n\n{note}',
-                demo_config if cached else config,
+                prompt if note is None else f'{prompt}\n\n{note}',
+                image_config if image_base64 else config,
                 image_base64,
             )
         except gemma.GemmaUnavailable:

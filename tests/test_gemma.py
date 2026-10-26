@@ -62,3 +62,11 @@ def test_image_mime():
     assert gemma.image_mime(b'\x89PNG\r\n') == 'image/png'
     assert gemma.image_mime(b'\xff\xd8\xff') == 'image/jpeg'
     assert gemma.image_mime(b'RIFF\0\0\0\0WEBP') == 'image/webp'
+
+
+def test_screenshot_tries_31b_first(monkeypatch):  # teammates: 26b read 0/7 screenshots, 31b read them right
+    class JsonReply:
+        text = 'Here you go: {"structure": "stack"}'
+    models = fake_client(monkeypatch, api_error(errors.ServerError, 503), JsonReply())
+    assert gemma.call_tool('hi', None, image_base64='iVBORw0KGgo=') == {'structure': 'stack'}
+    assert models == ['gemma-4-31b-it', 'gemma-4-26b-a4b-it']
