@@ -167,3 +167,18 @@ def test_insert_after_in_student_word_order():  # "insert 8 after 30": text orde
     q = 'my hw: list is 12 30, insert 8 after 30, 45 after 12'
     a = answer('doubly_linked_list', ['12', '30'], ops(('insert_after', '30', '8'), ('insert_after', '12', '45')))
     assert validate(q, a) == []
+
+
+def test_empty_plan_rejected():  # eval: 26b returned initial [] and ops [] for the BST demo question
+    assert any('empty plan' in p for p in validate(BST_Q, answer('bst', [], [])))
+
+
+def test_insert_after_missing_node():  # eval: DLL demo question came back with initial []
+    q = 'numList is a doubly-linked list: 12 <-> 30. ListInsertAfter(numList, node 30, node 8)'
+    assert any("isn't in the list" in p for p in validate(q, answer('doubly_linked_list', [], ops(('insert_after', '30', '8')))))
+    assert validate(q, answer('doubly_linked_list', ['12', '30'], ops(('insert_after', '30', '8')))) == []
+
+
+def test_number_hint():
+    assert plan.number_hint('Push 45, Push 56, Pop') .startswith('\n\nThe numbers in the question, in order, are: 45, 56.')
+    assert plan.number_hint('how does a queue work?') == ''

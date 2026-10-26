@@ -1,4 +1,5 @@
 import base64
+import json
 import time
 
 import truststore
@@ -12,6 +13,8 @@ client = genai.Client()  # reads GEMINI_API_KEY
 
 # Tries per model. 26b only: on 2026-10-25, 31b failed 9 of 9 calls (some hung 30-51s first); 26b answered in 1-3s.
 MODELS = {'gemma-4-26b-a4b-it': 2}
+# Screenshots: teammates saw 26b read 0/7 zyBooks screenshots correctly while 31b read them right, so 31b goes first.
+IMAGE_MODELS = {'gemma-4-31b-it': 1, 'gemma-4-26b-a4b-it': 1}
 
 
 class GemmaUnavailable(Exception):
@@ -57,14 +60,17 @@ def image_mime(data: bytes) -> str:
 
 
 def call_tool(text: str, config, image_base64: str | None = None) -> dict | None:
-    """Calls Gemma with a forced tool call and returns the tool's args, or None if it didn't call the tool.
+    """Asks Gemma for the plan as a plain JSON object and returns it, or None if the reply had no valid JSON.
+    No tool call: in tool mode 26b skipped thinking and returned empty/garbled plans; plain JSON got 4/4 right.
     Raises GemmaUnavailable if every model failed at the API level."""
     contents: list = [text]
     if image_base64:
         data = base64.b64decode(image_base64)
         contents.insert(0, types.Part.from_bytes(data=data, mime_type=image_mime(data)))
-    response = _call(contents, config, MODELS)
-    for call in response.function_calls or []:
-        if call.name == 'show_visualization':
-            return dict(call.args or {})
-    return None
+    response = _call(contents, config, IMAGE_MODELS if image_base64 else MODELS)
+    reply = response.text or ''
+    try:  # models sometimes wrap the JSON in prose or ```json fences
+        args = json.loads(reply[reply.index('{') : reply.rindex('}') + 1])
+    except ValueError:
+        return None
+    return args if isinstance(args, dict) else None
