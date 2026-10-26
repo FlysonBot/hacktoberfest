@@ -8,10 +8,6 @@ Paste or screenshot a data-structures question (or just ask "how does a stack wo
 
 - 🎥 **Video:** _[link coming soon]_
 
-| Typed question → animation | "Here's what I read" → animation |
-|---|---|
-| _[screenshot 1]_ | _[screenshot 2]_ |
-
 ## How it works
 
 ```mermaid
@@ -57,7 +53,7 @@ So the backend validates **every** plan before the browser sees it, and retries 
 
 The three demo questions also have cached plans, so they load instantly even if Gemma is busy.
 
-**Latest results (2026-10-25):** 55/55 visualization tests, 35/35 backend tests, and the typed demo stack question was correct 3/3 times in about 2 seconds each. Screenshot of the zyBooks linked-list question: 3/3 correct in 3–4s (it was 0/7 when we used tool calling; switching to plain JSON plans fixed it). Plan eval: 11/11 correct on the first try (median 2.1s), including messy student-style and concept questions.
+**Latest results (2026-10-25):** 55/55 visualization tests, 35/35 backend tests, and the typed question "push 45 56 11 then pop, what's left" was correct 3/3 times in about 2 seconds each. Screenshot of the zyBooks linked-list question: 3/3 correct in 3–4s (it was 0/7 when we used tool calling; switching to plain JSON plans fixed it). Plan eval: 11/11 correct on the first try (median 2.1s), including messy student-style and concept questions.
 
 ## Supported structures
 
@@ -108,10 +104,10 @@ See [CLAUDE.md](CLAUDE.md) for the full contracts (plan format, step format, viz
 
 Built at **DS3 Hacktoberfest Hack Day 2026 (UCSD)** by:
 
-- _[name 1]_
-- _[name 2]_
-- _[name 3]_
-- _[name 4]_
+- NAME1
+- NAME2
+- NAME3
+- NAME4
 
 ## License
 
