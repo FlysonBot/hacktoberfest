@@ -57,7 +57,7 @@ So the backend validates **every** plan before the browser sees it, and retries 
 
 The three demo questions also have cached plans, so they load instantly even if Gemma is busy.
 
-**Latest results (2026-10-25):** 55/55 visualization tests, 35/35 backend tests, and the typed demo stack question was correct 3/3 times in about 2 seconds each. Screenshot of the zyBooks linked-list question: 3/3 correct in 3–4s (it was 0/7 when we used tool calling; switching to plain JSON plans fixed it).
+**Latest results (2026-10-25):** 55/55 visualization tests, 35/35 backend tests, and the typed demo stack question was correct 3/3 times in about 2 seconds each. Screenshot of the zyBooks linked-list question: 3/3 correct in 3–4s (it was 0/7 when we used tool calling; switching to plain JSON plans fixed it). Plan eval: 11/11 correct on the first try (median 2.1s), including messy student-style and concept questions.
 
 ## Supported structures
 
