@@ -1,7 +1,7 @@
 """Eval for /api/plan: does Gemma pick the right structure + source and extract the right initial/ops?
 
-Sends each test question to gemma-4-31b-it with the show_visualization tool (CLAUDE.md contract 1)
-and prints PASS/FAIL per case, the extracted tool call, and a final score.
+Sends each test question to Gemma, which replies with a plain JSON plan (same prompt and config as
+backend/plan.py; no tool call since 2026-10-25), and prints PASS/FAIL per case, the plan, and a final score.
 
 Run from the repo root:
     uv run python eval/eval_plan.py                                   # 31b -> 26b fallback, high thinking
@@ -79,7 +79,7 @@ SHOW_VISUALIZATION = types.FunctionDeclaration(
 
 # Placeholder until backend/prompts.py exists; keep in sync with the backend's system prompt.
 SYSTEM_PROMPT = """You help CSE 12 students understand data structures by choosing a visualization.
-Always call the show_visualization tool. Never answer in free text and never compute results yourself.
+Reply with ONLY one JSON object with keys "structure", "initial", "ops", "source" (no other text). Never compute results yourself.
 
 Structures, what `initial` means, and valid ops (args):
 - singly_linked_list / doubly_linked_list: initial = values head -> tail.
@@ -106,7 +106,7 @@ Rules:
 - Each arg is one plain number or word as a string, e.g. ["45"] (insert_after takes two: ["30", "8"]).
 - Students write informally, with typos, missing punctuation, or partial info. Interpret generously; if values
   are missing, invent a small example instead of refusing. If the structure starts empty, initial must be [].
-- Complete examples of correct show_visualization calls (copy this shape exactly):
+- Complete examples of correct JSON replies (copy this shape exactly):
   "Explain how a stack works." ->
   {"structure": "stack", "initial": [], "ops": [{"op": "push", "args": ["5"]}, {"op": "push", "args": ["8"]},
    {"op": "push", "args": ["2"]}, {"op": "pop", "args": []}, {"op": "peek", "args": []}], "source": "generated_example"}
@@ -166,20 +166,18 @@ client = genai.Client()
 def make_config(thinking_level):
     return types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
-        tools=[types.Tool(function_declarations=[SHOW_VISUALIZATION])],
-        tool_config=types.ToolConfig(function_calling_config=types.FunctionCallingConfig(mode="ANY")),
         thinking_config=types.ThinkingConfig(thinking_level=thinking_level),
     )
 
 
 # Set by run_suite(): which models to try (in order, on 500/503), the config, and per-run stats.
 attempts_order = ATTEMPTS
-config = make_config("high")
+config = make_config("minimal")
 stats = {"latencies": [], "server_errors": 0}
 
 
 def plan(question, note=None):
-    """Returns (model_used, show_visualization args dict), or raises with a reason.
+    """Returns (model_used, plan dict parsed from the JSON reply), or raises with a reason.
     `note` (from retry_note) is appended to the question on a retry."""
     contents = question if note is None else f"{question}\n\n{note}"
     for attempt, model in enumerate(attempts_order):
@@ -195,10 +193,14 @@ def plan(question, note=None):
             wait = SLEEP_SECONDS * (attempt + 1)
             print(f"  {e.code} from {model} after {time.time() - t:.1f}s; trying {attempts_order[attempt + 1]} in {wait}s", flush=True)
             time.sleep(wait)
-    for call in response.function_calls or []:
-        if call.name == "show_visualization":
-            return model, dict(call.args or {})
-    raise ValueError(f"no tool call; text was: {(response.text or '').strip()[:200]!r}")
+    reply = response.text or ""
+    try:  # models sometimes wrap the JSON in prose or ```json fences
+        args = json.loads(reply[reply.index("{"): reply.rindex("}") + 1])
+    except ValueError:
+        raise ValueError(f"no JSON object; text was: {reply.strip()[:200]!r}")
+    if not isinstance(args, dict):
+        raise ValueError(f"JSON is not an object: {reply.strip()[:200]!r}")
+    return model, args
 
 
 def norm_ops(raw):
@@ -311,10 +313,10 @@ def check(question, args, *expected):
 def retry_note(validation_problems):
     """Error note for the retry. Lists only validation problems, so it never leaks the expected answer."""
     if not validation_problems:
-        return ("Your previous show_visualization call did not match the question. Re-read the question and "
+        return ("Your previous JSON reply did not match the question. Re-read the question and "
                 "copy its data structure, starting contents, and operations exactly.")
     lines = "\n".join(f"- {p}" for p in validation_problems)
-    return f"Your previous show_visualization call was invalid:\n{lines}\nCall show_visualization again and fix these problems."
+    return f"Your previous JSON reply was invalid:\n{lines}\nReply again with the fixed JSON object."
 
 
 def attempt(question, expected, note=None):
@@ -378,7 +380,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", help="test only this model (500/503 retries stay on it)")
-    parser.add_argument("--thinking", default="high", help="thinking level: minimal | low | medium | high")
+    parser.add_argument("--thinking", default="minimal", help="thinking level: minimal | low | medium | high")
     parser.add_argument("--compare", action="store_true", help="compare A: 26b minimal vs B: 31b high")
     opts = parser.parse_args()
 
@@ -396,4 +398,4 @@ if __name__ == "__main__":
     elif opts.model:
         run_suite(opts.model, [opts.model] * 3, opts.thinking)
     else:
-        run_suite("default", ATTEMPTS, opts.thinking)
+        run_suite("default", [FALLBACK_MODEL] * 3, opts.thinking)  # what the backend uses
