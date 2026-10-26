@@ -6,7 +6,7 @@ Paste or screenshot a data-structures question (or just ask "how does a stack wo
 
 ## Demo
 
-- 🎥 **Video:** _[link coming soon]_
+🎥 **Video:** https://www.loom.com/share/b494b1ef4bda44e5aa513155490eb554
 
 ## How it works
 
