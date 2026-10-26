@@ -257,45 +257,6 @@
   </div>
 </main>
 
-<!-- ============ DEVELOPER TOOLS (integration-testing aid) ============ -->
-<div class="dev-tools">
-  <details class="dev-tools-inner" id="dev-tools">
-    <summary>Developer tools</summary>
-    <div class="dev-tools-body">
-      <p><strong>Mode:</strong> <span id="dev-mode">Live API</span></p>
-      <p><strong>Last request:</strong> <span id="dev-status">&mdash;</span></p>
-
-      <h2>Plan response</h2>
-      <pre id="dev-plan-preview" class="dev-pre">&mdash;</pre>
-
-      <h2>Current step (raw detail)</h2>
-      <pre id="dev-step-detail" class="dev-pre">&mdash;</pre>
-
-      <h2>Errors</h2>
-      <ul id="dev-errors" class="dev-errors"></ul>
-
-      <h2>Manual test input</h2>
-      <p>
-        Paste a plan response shaped like <code>{"structure","initial","ops","source"}</code> or
-        <code>{"structure":null,"message"}</code> to test the frontend and visualization modules without
-        calling <code>/api/plan</code>. This is a manual test route &mdash; it never pretends to be a live
-        backend response.
-      </p>
-      <textarea
-        id="dev-json-input"
-        class="dev-json-input"
-        rows="6"
-        placeholder='{"structure":"bst","initial":[],"ops":[{"op":"insert","args":["50"]},{"op":"insert","args":["30"]}],"source":"user_question"}'
-      ></textarea>
-      <div class="dev-tools-actions">
-        <button type="button" id="dev-json-example">Insert example</button>
-        <button type="button" id="dev-json-load">Load as plan response</button>
-      </div>
-      <p id="dev-json-error" class="field-error" role="alert" hidden></p>
-    </div>
-  </details>
-</div>
-
 <script type="module" src="app.js"></script>
 </body>
 </html>

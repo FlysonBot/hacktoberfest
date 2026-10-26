@@ -106,16 +106,6 @@ const els = {
   lessonOutline: document.getElementById('lesson-outline'),
   outlineMeta: document.getElementById('outline-meta'),
   outlineList: document.getElementById('outline-list'),
-
-  devMode: document.getElementById('dev-mode'),
-  devStatus: document.getElementById('dev-status'),
-  devPlanPreview: document.getElementById('dev-plan-preview'),
-  devErrors: document.getElementById('dev-errors'),
-  devJsonInput: document.getElementById('dev-json-input'),
-  devJsonExample: document.getElementById('dev-json-example'),
-  devJsonLoad: document.getElementById('dev-json-load'),
-  devJsonError: document.getElementById('dev-json-error'),
-  devStepDetail: document.getElementById('dev-step-detail'),
 };
 
 const state = {
@@ -135,7 +125,6 @@ const state = {
   captionsRequestToken: 0,
   captionsSettled: true,
   explainTokenSeq: 0,
-  mode: 'live',
   screen: 'start', // 'start' | 'workspace'
   workspacePhase: 'generating', // 'generating' | 'lesson' | 'text'
   textMessage: '',
@@ -181,25 +170,6 @@ function init() {
   els.sandboxForm.addEventListener('submit', onSandboxSubmit);
 
   document.addEventListener('keydown', onKeyDown);
-
-  els.devJsonExample.addEventListener('click', () => {
-    els.devJsonInput.value = JSON.stringify(
-      {
-        structure: 'bst',
-        initial: [],
-        ops: [
-          { op: 'insert', args: ['50'] },
-          { op: 'insert', args: ['30'] },
-          { op: 'insert', args: ['70'] },
-          { op: 'insert', args: ['20'] },
-        ],
-        source: 'user_question',
-      },
-      null,
-      2
-    );
-  });
-  els.devJsonLoad.addEventListener('click', onLoadManualJson);
 
   syncGenerateDisabled();
   renderPracticePanel();
@@ -307,14 +277,11 @@ async function onGenerateClick(queryOverride) {
     els.generatingSub.textContent = SLOW_GENERATING_TEXT;
   }, SLOW_TEXT_DELAY_MS);
 
-  devSetStatus('POST /api/plan — sending…');
   try {
     const response = await postPlan(payload, { signal: state.planAbortController.signal });
     clearTimeout(timeoutId);
     clearTimeout(slowTextTimer);
     if (token !== state.planRequestToken) return; // superseded
-    devSetStatus('POST /api/plan — 200 OK');
-    setMode('live');
     await handlePlanResponse(response);
   } catch (err) {
     clearTimeout(timeoutId);
@@ -341,26 +308,19 @@ async function onGenerateClick(queryOverride) {
 async function tryLoadCachedDemo(demoMatch) {
   setScreen('workspace');
   setWorkspacePhase('generating');
-  devSetStatus(`Loading cached demo plan — ${demoMatch.file}`);
   try {
     const res = await fetch(demoMatch.file);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
-    setMode('cached');
-    devSetStatus(`Cached demo plan loaded — ${demoMatch.file}`);
-    await handlePlanResponse(json, { source: 'cached' });
+    await handlePlanResponse(json);
     return true;
   } catch (err) {
-    devLogError('demo cache', `Failed to load ${demoMatch.file}: ${err.message}`);
+    console.error('demo cache', `Failed to load ${demoMatch.file}: ${err.message}`);
     return false;
   }
 }
 
-async function handlePlanResponse(response, { source = 'live' } = {}) {
-  // Record the raw response for the backend teammate before anything else,
-  // so /api/plan is inspectable even if no viz module exists yet.
-  devShowPlanPreview(response, source);
-
+async function handlePlanResponse(response) {
   if (!response || typeof response !== 'object') {
     setScreen('start');
     showPlanError('The plan response was not a valid JSON object.');
@@ -433,7 +393,7 @@ async function loadStructure(structure, initial, ops) {
     setWorkspacePhase('lesson');
     renderTitleRow();
     showStageError(`${structure}'s run() threw an error: ${err.message}`);
-    devLogError(`viz/${structure}.js run()`, err.message);
+    console.error(`viz/${structure}.js run()`, err.message);
     return;
   }
 
@@ -452,7 +412,7 @@ async function loadStructure(structure, initial, ops) {
     const result = mod.questions(steps);
     if (Array.isArray(result)) questions = result;
   } catch (err) {
-    devLogError(`viz/${structure}.js questions()`, err.message);
+    console.error(`viz/${structure}.js questions()`, err.message);
   }
   state.questions = questions;
 
@@ -494,7 +454,6 @@ async function requestCaptions(structure, steps, lessonId, fromIndex) {
   const token = ++state.captionsRequestToken;
   const payload = { structure, steps: slice.map((s) => ({ action: s.action, detail: s.detail })) };
 
-  devSetStatus('POST /api/captions — sending…');
   try {
     const response = await postCaptions(payload);
     if (lessonId !== state.lessonId || token !== state.captionsRequestToken) return; // stale
@@ -508,10 +467,8 @@ async function requestCaptions(structure, steps, lessonId, fromIndex) {
       for (let i = fromIndex; i < state.steps.length; i++) {
         state.steps[i].caption = captions[i - fromIndex];
       }
-      devSetStatus('POST /api/captions — 200 OK');
     } else {
-      devSetStatus('POST /api/captions — invalid shape, keeping fallback captions');
-      devLogError('/api/captions', 'Response did not contain exactly one string caption per new step.');
+      console.error('/api/captions', 'Response did not contain exactly one string caption per new step.');
     }
   } catch (err) {
     if (lessonId !== state.lessonId || token !== state.captionsRequestToken) return;
@@ -592,7 +549,7 @@ function onPlayerChange({ index, length, step, canGoBack, canGoNext }) {
     try {
       state.vizModule.render(els.vizContainer, step);
     } catch (err) {
-      devLogError(`viz/${state.structure}.js render()`, err.message);
+      console.error(`viz/${state.structure}.js render()`, err.message);
     }
   }
 
@@ -619,7 +576,6 @@ function updateCaption(step) {
     els.stepTag.textContent = '';
     els.captionText.textContent = 'Generate a lesson to see it animated here.';
     els.captionsLoadingChip.hidden = true;
-    els.devStepDetail.textContent = '—';
     return;
   }
   const hasRealCaption = typeof step.caption === 'string' && step.caption.trim().length > 0;
@@ -627,9 +583,6 @@ function updateCaption(step) {
   els.stepTag.textContent = formatActionTitle(step.action);
   els.captionText.textContent = hasRealCaption ? step.caption : fallbackCaption(step);
   els.captionsLoadingChip.hidden = state.captionsSettled;
-  // Raw detail facts are debug info for teammates, not shown to students —
-  // kept in Developer tools instead of under the caption.
-  els.devStepDetail.textContent = JSON.stringify({ action: step.action, detail: step.detail }, null, 2);
 }
 
 function onRestartClick() {
@@ -877,7 +830,6 @@ function onCheckAnswer(stepIndex, question) {
     correct_answer: getCorrectChoiceText(question),
   };
 
-  devSetStatus('POST /api/explain — sending…');
   postExplain(payload)
     .then((response) => {
       const current = state.answers.get(stepIndex);
@@ -885,7 +837,6 @@ function onCheckAnswer(stepIndex, question) {
       current.pending = false;
       current.explanation =
         response && typeof response.explanation === 'string' ? response.explanation : `The correct answer is: ${getCorrectChoiceText(question)}.`;
-      devSetStatus('POST /api/explain — 200 OK');
       renderPracticePanel();
     })
     .catch((err) => {
@@ -1008,7 +959,7 @@ function onSandboxSubmit(e) {
     newSteps = state.vizModule.run(state.initial, combinedOps);
   } catch (err) {
     showSandboxError(`Running these operations failed: ${err.message}`);
-    devLogError(`viz/${state.structure}.js run() (sandbox)`, err.message);
+    console.error(`viz/${state.structure}.js run() (sandbox)`, err.message);
     return;
   }
   if (!Array.isArray(newSteps) || newSteps.length === 0) {
@@ -1025,7 +976,7 @@ function onSandboxSubmit(e) {
     const result = state.vizModule.questions(newSteps);
     if (Array.isArray(result)) questions = result;
   } catch (err) {
-    devLogError(`viz/${state.structure}.js questions() (sandbox)`, err.message);
+    console.error(`viz/${state.structure}.js questions() (sandbox)`, err.message);
   }
   state.questions = questions;
 
@@ -1147,80 +1098,11 @@ function hidePlanError() {
   els.generateBtnLabel.textContent = 'Visualize';
 }
 
-// ---------- Developer tools ----------
-
-const MODE_LABELS = { live: 'Live API', manual: 'Manual JSON', cached: 'Cached demo response' };
-
-function setMode(mode) {
-  state.mode = mode;
-  els.devMode.textContent = MODE_LABELS[mode] || mode;
-}
-
-function devSetStatus(text) {
-  els.devStatus.textContent = `${text} — ${new Date().toLocaleTimeString()}`;
-}
-
-function devShowPlanPreview(response, source) {
-  const labels = {
-    manual: '[manual test input, not from the live backend]\n',
-    cached: '[cached demo response, not a live /api/plan call]\n',
-  };
-  els.devPlanPreview.textContent = (labels[source] || '') + JSON.stringify(response, null, 2);
-}
-
-function devLogError(source, message) {
-  const li = document.createElement('li');
-  li.textContent = `[${new Date().toLocaleTimeString()}] ${source}: ${message}`;
-  els.devErrors.prepend(li);
-  while (els.devErrors.children.length > 20) {
-    els.devErrors.removeChild(els.devErrors.lastChild);
-  }
-}
-
 function handleApiError(path, err) {
-  const status = err instanceof ApiError ? err.status : 0;
-  devSetStatus(`${path} — ${status ? `HTTP ${status}` : 'network/parse error'}`);
-  devLogError(path, describeError(err));
+  console.error(path, describeError(err));
 }
 
 function describeError(err) {
   if (err instanceof ApiError) return err.message;
   return err && err.message ? err.message : String(err);
-}
-
-function onLoadManualJson() {
-  hideDevJsonError();
-  let parsed;
-  try {
-    parsed = JSON.parse(els.devJsonInput.value);
-  } catch {
-    showDevJsonError('That is not valid JSON.');
-    return;
-  }
-  if (!parsed || typeof parsed !== 'object') {
-    showDevJsonError('Expected a JSON object.');
-    return;
-  }
-  const hasNullShape = parsed.structure === null && typeof parsed.message === 'string';
-  const hasStructureShape = typeof parsed.structure === 'string' && Array.isArray(parsed.initial) && Array.isArray(parsed.ops);
-  if (!hasNullShape && !hasStructureShape) {
-    showDevJsonError('Expected { structure, initial, ops, source } or { structure: null, message }.');
-    return;
-  }
-
-  setMode('manual');
-  ++state.planRequestToken; // invalidate any in-flight live /api/plan request
-  devSetStatus('Manual plan response loaded');
-  setScreen('workspace');
-  handlePlanResponse(parsed, { source: 'manual' });
-}
-
-function showDevJsonError(msg) {
-  els.devJsonError.textContent = msg;
-  els.devJsonError.hidden = false;
-}
-
-function hideDevJsonError() {
-  els.devJsonError.hidden = true;
-  els.devJsonError.textContent = '';
 }
