@@ -17,7 +17,6 @@ config = types.GenerateContentConfig(
     thinking_config=types.ThinkingConfig(thinking_level='minimal'),
     http_options=types.HttpOptions(timeout=18_000),  # ms; under the frontend's 20s PLAN_TIMEOUT_MS
 )
-image_config = config.model_copy(update={'http_options': types.HttpOptions(timeout=40_000)})  # 31b reads images slowly
 
 
 def normalize(args) -> dict:
@@ -131,7 +130,7 @@ def make_plan(text: str, image_base64: str | None = None) -> dict:
             prompt = text + ('' if image_base64 else number_hint(text))
             args = gemma.call_tool(
                 prompt if note is None else f'{prompt}\n\n{note}',
-                image_config if image_base64 else config,
+                config,
                 image_base64,
             )
         except gemma.GemmaUnavailable:

@@ -13,8 +13,6 @@ client = genai.Client()  # reads GEMINI_API_KEY
 
 # Tries per model. 26b only: on 2026-10-25, 31b failed 9 of 9 calls (some hung 30-51s first); 26b answered in 1-3s.
 MODELS = {'gemma-4-26b-a4b-it': 2}
-# Screenshots: teammates saw 26b read 0/7 zyBooks screenshots correctly while 31b read them right, so 31b goes first.
-IMAGE_MODELS = {'gemma-4-31b-it': 1, 'gemma-4-26b-a4b-it': 1}
 
 
 class GemmaUnavailable(Exception):
@@ -67,7 +65,8 @@ def call_tool(text: str, config, image_base64: str | None = None) -> dict | None
     if image_base64:
         data = base64.b64decode(image_base64)
         contents.insert(0, types.Part.from_bytes(data=data, mime_type=image_mime(data)))
-    response = _call(contents, config, IMAGE_MODELS if image_base64 else MODELS)
+    # Screenshots use 26b too: in JSON mode it read 6/6 test screenshots correctly in 2-7s; 31b-first took 17-44s.
+    response = _call(contents, config, MODELS)
     reply = response.text or ''
     try:  # models sometimes wrap the JSON in prose or ```json fences
         args = json.loads(reply[reply.index('{') : reply.rindex('}') + 1])

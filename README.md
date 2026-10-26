@@ -33,9 +33,9 @@ Gemma 4 reads the question and decides *what* to show: which structure, its star
 | Feature | How we use it |
 |---|---|
 | **Structured output** | Gemma replies with one JSON object, `{structure, initial, ops, source}`, that the backend checks against our schema. We started with function calling, but our tests showed the 26B model returning empty or garbled plans in tool mode, while plain JSON replies got the values right. |
-| **Image input** | Screenshot a zyBooks or homework question; screenshots are routed to Gemma 4 31B, which reads the values and operations from the image. |
+| **Image input** | Screenshot a zyBooks or homework question; Gemma 4 reads the values and operations straight from the image. |
 | **Speed vs. thinking** | We measured thinking levels and use `minimal`: typed questions come back in about 2 seconds, which keeps the app interactive. |
-| **Open weights** | Gemma 4 is an open model; we use `gemma-4-26b-a4b-it` for typed questions, captions, and explanations, and `gemma-4-31b-it` for screenshots, through the Gemini API. |
+| **Open weights** | Gemma 4 is an open model; we use `gemma-4-26b-a4b-it` for typed questions, screenshots, captions, and explanations, through the Gemini API. |
 
 ## Reliability
 
