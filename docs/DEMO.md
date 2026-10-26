@@ -65,7 +65,7 @@ Wait for the explanation, then click **Next** to step 4 so the pop removes 11:
 **Point at the "Here's what I read" line**, which shows: Doubly Linked List · start with 12, 30 · insert_after 30 8, insert_after 12 45, insert_after 45 76.
 
 **Say:**
-> "Before animating anything, it shows exactly what it understood, so the student can catch a misread question. And you don't have to retype homework: screenshots work too. They're routed to Gemma 4 31B, which reads the image."
+> "Before animating anything, it shows exactly what it understood, so the student can catch a misread question. And you don't have to retype homework: screenshots work too. Gemma 4 reads the values and operations straight from the image."
 
 **Click:** Next through the steps to the final list `12 ⇄ 45 ⇄ 76 ⇄ 30 ⇄ 8`.
 

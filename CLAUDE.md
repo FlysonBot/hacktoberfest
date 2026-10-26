@@ -60,7 +60,7 @@ Browser (frontend/)                          Python backend (backend/)          
 
 ### 1. Tool call: `show_visualization`
 
-> **2026-10-25 change (backend):** `/api/plan` no longer uses a tool call. In tool mode 26b skipped thinking and returned empty or garbled plans (e.g. `initial: []` for the DLL and BST demo questions). Gemma now replies with a plain JSON object with these same four fields (`thinking_level="minimal"`, 18s timeout), which got every answer right in testing. Screenshots try `gemma-4-31b-it` first. The schema below still describes the fields. `eval/eval_plan.py` still uses the tool call and needs the same switch.
+> **2026-10-25 change (backend):** `/api/plan` no longer uses a tool call. In tool mode 26b skipped thinking and returned empty or garbled plans (e.g. `initial: []` for the DLL and BST demo questions). Gemma now replies with a plain JSON object with these same four fields (`thinking_level="minimal"`, 18s timeout), which got every answer right in testing. Screenshots use 26b too (6/6 test screenshots read correctly in 2–7s; 31b-first took 17–44s). The schema below still describes the fields. `eval/eval_plan.py` still uses the tool call and needs the same switch.
 
 Gemma must call this tool; it does not answer in free text. **Every field is fully typed** (no untyped objects).
 
