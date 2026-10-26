@@ -9,7 +9,7 @@ One person talks, one person drives the laptop. Rehearse with a timer at least t
 |---|---|---|---|
 | 1 | Hook | 15s | 0:15 |
 | 2 | Demo 1: typed stack question | 45s | 1:00 |
-| 3 | Demo 2: screenshot of a linked-list question | 45s | 1:45 |
+| 3 | Demo 2: linked-list question ("Here's what I read") | 45s | 1:45 |
 | 4 | Demo 3: sandbox | 30s | 2:15 |
 | 5 | How it works | 30s | 2:45 |
 | 6 | Close | 15s | 3:00 |
@@ -29,12 +29,11 @@ One person talks, one person drives the laptop. Rehearse with a timer at least t
 
 ## 2. Demo 1: typed question (45s)
 
-**Type into the input box exactly:**
+**Click:** the **"Demo 1: Stack push/pop"** chip (it fills in the question below), then **Visualize**. Or type it exactly:
 ```
 Given an empty stack numStack, what are the stack's contents after these operations? Push(numStack, 45), Push(numStack, 56), Push(numStack, 11), Pop(numStack)
 ```
-
-**Click:** Submit. (Expected plan = `samples/plan_stack.json`.)
+This is a cached demo question, so it loads instantly (expected plan = `samples/plan_stack.json`); the captions and the explanation still come from Gemma live.
 
 **Click:** Next through the steps, reading one caption out loud:
 
@@ -54,40 +53,32 @@ Given an empty stack numStack, what are the stack's contents after these operati
 Wait for the explanation, then click **Next** to step 4 so the pop removes 11:
 > "Gemma explains *why* I'm wrong, but the correct answer, 11, came from our JavaScript, not the model."
 
-> **If the API is slow (more than ~5s):** "We cache demo responses as a fallback, since free-tier Gemma gets busy at hackathons." Keep going with the cached version.
+> **If the explanation is slow (more than ~5s):** "Free-tier Gemma gets busy at hackathons; the correct answer is already computed in JavaScript." Keep going.
 
 ---
 
-## 3. Demo 2: screenshot (45s), the multimodal moment
+## 3. Demo 2: linked-list question (45s)
 
-**Say:**
-> "Most of the time you don't want to retype the question. So, screenshot."
-
-**Click:** the upload button and choose `docs/demo/dll_question.png`, a screenshot of the zyBooks question:
+**Click:** the **"Demo 2: Linked list insert"** chip, then **Visualize**. This is the zyBooks question (cached, loads instantly):
 > numList is a doubly-linked list: 12 ⇄ 30. ListInsertAfter(numList, node 30, node 8); ListInsertAfter(numList, node 12, node 45); ListInsertAfter(numList, node 45, node 76)
 
-**Click:** Submit.
-
-**Point at the "Here's what I read" line**, which should show: doubly linked list, starting `12, 30`, then insert 8 after 30, 45 after 12, 76 after 45.
+**Point at the "Here's what I read" line**, which shows: Doubly Linked List · start with 12, 30 · insert_after 30 8, insert_after 12 45, insert_after 45 76.
 
 **Say:**
-> "Gemma 4 read the image and pulled out the exact values and operations, and it shows us what it read so the student can check it."
+> "Before animating anything, it shows exactly what it understood, so the student can catch a misread question. And you don't have to retype homework: screenshots work too. They're routed to Gemma 4 31B, which reads the image."
 
-**Click:** Play. Let it run to the final list `12 ⇄ 45 ⇄ 76 ⇄ 30 ⇄ 8`.
-
-> **Backup:** if upload or extraction fails, say "we cache demo responses as a fallback" and load the cached plan (`samples/plan_doubly_linked_list.json`).
+**Click:** Next through the steps to the final list `12 ⇄ 45 ⇄ 76 ⇄ 30 ⇄ 8`.
 
 ---
 
 ## 4. Demo 3: sandbox (30s)
 
-**Type into the input box exactly:**
+**Click:** the **"Demo 3: BST search"** chip, then **Visualize** (cached; expected plan = `samples/plan_bst.json`). The question is:
 ```
 Which nodes are visited when searching for 65 in this BST? The root is 21. 21's left child is 12 and right child is 91. 12's children are 11 (left) and 19 (right). 91's children are 65 (left) and 96 (right).
 ```
-(Or have it preloaded, to save time. Expected plan = `samples/plan_bst.json`.)
 
-**Click:** Play. The search path lights up: **21 → 91 → 65**.
+**Click:** Next through the steps. The search path lights up: **21 → 91 → 65**.
 
 **Say:**
 > "Now it's not just their example or my question. I can play with it."
@@ -97,7 +88,7 @@ Which nodes are visited when searching for 65 in this BST? The root is 21. 21's 
 insert 70, search 70
 ```
 
-**Click:** Run. 70 goes 21 → right → 91 → left → 65 → right, then the search follows the same path and finds it.
+**Press Enter** (or click Run). 70 goes 21 → right → 91 → left → 65 → right, then the search follows the same path and finds it.
 
 **Say:**
 > "That ran instantly, with no AI in the loop. The sandbox is pure JavaScript, so it's always correct."
@@ -109,7 +100,7 @@ insert 70, search 70
 **Screen:** the architecture diagram from the README (or CLAUDE.md).
 
 **Say:**
-> "Gemma 4 does the language part: it reads typed or screenshotted questions, thinks about them, and returns a strict tool call: which data structure, the starting contents, and the exact operations. JavaScript does the correctness part: every step and every answer is computed in code, so the animation is never wrong. And we didn't just trust the model: our eval caught real errors, like the smaller Gemma model reordering the numbers 50, 30, 70 into 50, 30, 40, which builds a different tree. So we validate every response: the right operations, the right number of arguments, and only numbers from the question, in the question's order."
+> "Gemma 4 does the language part: it reads typed or screenshotted questions and returns a small JSON plan: which data structure, the starting contents, and the exact operations. JavaScript does the correctness part: every step and every answer is computed in code, so the animation is never wrong. And we didn't just trust the model: our eval caught real errors, like the smaller Gemma model reordering the numbers 50, 30, 70 into 50, 30, 40, which builds a different tree, or swapping which node to insert after. So we validate every response: the right operations and arguments, nodes that actually exist, and only numbers from the question, in the question's order. Typed questions come back in about two seconds."
 
 ---
 
@@ -124,14 +115,14 @@ insert 70, search 70
 
 ## If things go wrong
 
-- **API slow or 503:** "We cache demo responses as a fallback, since free-tier Gemma gets busy at hackathons." Then use the cached version.
+- **API slow or 503:** the three demo chips load cached plans, so the animations still work; only captions and explanations need Gemma (the app falls back to captions built in JavaScript). Say: "Free-tier Gemma gets busy at hackathons, but every step is computed in JavaScript."
 - **A caption looks off:** "Captions come from the model, but the animation and answers come from code, so the steps are still right."
 - **Total failure:** play the recorded demo video.
 
 ## Demo checklist
 
-- [ ] Screenshots saved: `docs/demo/dll_question.png` (Demo 2) and the zyBooks stack question (Hook)
-- [ ] Cached responses in `samples/` for all 3 demo questions (stack, doubly linked list, BST), **including captions**, and the fallback tested with Wi-Fi off
+- [ ] Screenshot of the zyBooks stack question saved for the Hook (`docs/demo/dll_question.png` is for the README)
+- [ ] All 3 demo chips load instantly from the cached plans in `frontend/demo/` (stack 5 steps, DLL 4, BST 4); captions and the Demo 1 explanation show up live
 - [ ] `GEMINI_API_KEY` set in the terminal running the server; server started with `uv run uvicorn backend.main:app`
 - [ ] Browser zoomed in (125–150%), other tabs closed, notifications off
 - [ ] Demo inputs copied into a notes file, ready to paste
